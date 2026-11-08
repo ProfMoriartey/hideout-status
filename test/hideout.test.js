@@ -148,12 +148,12 @@ test('start -> progress -> done -> idle: since, updatedAt and events', async () 
   assert.equal(feed.members.feitan.state, 'idle');
   assert.deepEqual(feed.events.map((e) => e.kind), ['done', 'start', 'progress', 'start'], 'idle adds no event');
   assert.ok(feed.events.every((e, i, a) => i === 0 || a[i - 1].at >= e.at), 'newest first');
-  const idleSince = feed.members.feitan.since;
-  await tick();
-  assert.equal(run(['idle', 'feitan'], { repo }).code, 0);
-  feed = remoteFeed(bare);
-  assert.equal(feed.members.feitan.since, idleSince, 'idle while idle keeps since');
-  assert.ok(feed.members.feitan.updatedAt > idleSince);
+  // idle while idle: no-op, exit 0, no commit
+  const idleTip = git(bare, 'rev-parse', BRANCH);
+  r = run(['idle', 'feitan'], { repo });
+  assert.equal(r.code, 0, r.stderr);
+  assert.match(r.stderr, /nothing to change/);
+  assert.equal(git(bare, 'rev-parse', BRANCH), idleTip);
   assert.notEqual(run(['done', 'feitan'], { repo }).code, 0, 'done needs working');
 });
 
@@ -195,6 +195,7 @@ test('mission retire removes every trace of a finished mission', () => {
   assert.deepEqual(feed.missions.map((x) => x.codename), ['Silk Lantern']);
   assert.equal(feed.members.feitan.state, 'working');
   assert.equal(feed.members.feitan.mission, undefined);
+  assert.equal(feed.members.feitan.updatedAt, feed.updatedAt, 'retire touches updatedAt of changed members');
   assert.equal(feed.members.machi.mission, 'Silk Lantern');
   assert.ok(feed.events.some((e) => e.mission === 'Silk Lantern'));
   // retiring again is a no-op
@@ -383,4 +384,72 @@ test('git failures say why', () => {
   assert.equal(r.code, 1);
   assert.match(r.stderr, /^hideout: git fetch failed: .+/m);
   assert.doesNotMatch(r.stderr, /Command failed/);
+});
+
+test('feed commits use a fixed identity and UTC dates, never the caller\'s', () => {
+  const { bare, clones: [repo] } = makeRemote();
+  git(repo, 'config', 'user.name', 'Real Person');
+  git(repo, 'config', 'user.email', 'real.person@home.example');
+  const r = run(['start', 'phinks', '--verb', 'fixing'], { repo, env: { TZ: 'Asia/Tokyo' } });
+  assert.equal(r.code, 0, r.stderr);
+  const meta = git(bare, 'log', '-1', '--format=%an <%ae> %ad|%cn <%ce> %cd|%G?', '--date=raw', BRANCH);
+  assert.match(meta, /^hideout <hideout@noreply\.invalid> \d+ \+0000\|hideout <hideout@noreply\.invalid> \d+ \+0000\|N$/);
+  assert.doesNotMatch(git(bare, 'log', '-1', '--format=%B%an%ae%cn%ce', BRANCH), /Real|real\.person/);
+});
+
+test('hook text that mimics a race does not cause retries', () => {
+  const { bare, clones: [repo] } = makeRemote();
+  fs.writeFileSync(path.join(bare, 'hooks', 'pre-receive'),
+    '#!/bin/sh\necho "failed to update ref: policy" >&2\necho " ! [rejected] x -> y (fetch first)" >&2\nexit 1\n', { mode: 0o755 });
+  const r = run(['start', 'feitan', '--verb', 'testing'], { repo });
+  assert.equal(r.code, 1);
+  assert.doesNotMatch(r.stderr, /retrying/);
+  assert.match(r.stderr, /branch protection/);
+});
+
+test('GIT_* variables from the caller cannot redirect the tool', () => {
+  const { bare, clones: [repo, other] } = makeRemote(2);
+  const otherTip = git(other, 'rev-parse', 'HEAD');
+  const r = run(['start', 'feitan', '--verb', 'testing'], {
+    repo, env: { GIT_DIR: path.join(other, '.git'), GIT_WORK_TREE: other, GIT_INDEX_FILE: path.join(other, '.git', 'index') },
+  });
+  assert.equal(r.code, 0, r.stderr);
+  assert.equal(remoteFeed(bare).members.feitan.state, 'working');
+  assert.equal(git(other, 'rev-parse', 'HEAD'), otherTip, 'the other clone was not touched');
+  assert.equal(git(repo, 'rev-parse', 'HEAD'), git(bare, 'rev-parse', BRANCH));
+});
+
+test('a git filter that would change the pushed bytes is refused', () => {
+  const { bare, clones: [repo, b] } = makeRemote(2);
+  fs.writeFileSync(path.join(b, '.gitattributes'), 'status.json filter=shout\n');
+  git(b, 'add', '.gitattributes');
+  git(b, 'commit', '--quiet', '-m', 'attrs');
+  git(b, 'push', '--quiet', 'origin', BRANCH);
+  git(repo, 'config', 'filter.shout.clean', 'tr a-z A-Z');
+  const tip = git(bare, 'rev-parse', BRANCH);
+  const r = run(['start', 'feitan', '--verb', 'testing'], { repo });
+  assert.equal(r.code, 1);
+  assert.match(r.stderr, /git attributes \(filter\)/);
+  assert.equal(git(bare, 'rev-parse', BRANCH), tip);
+  // nothing was written: the file is still the committed blob
+  // (git status would report it modified only because of the filter itself)
+  assert.equal(fs.readFileSync(path.join(repo, 'status.json'), 'utf8'), `${git(repo, 'show', 'HEAD:status.json')}\n`);
+});
+
+test('the committed blob must equal the validated bytes (filter set only in config)', () => {
+  const { bare, clones: [repo] } = makeRemote();
+  // An info/attributes file is local-only; check-attr sees it, so the tool refuses up front.
+  fs.mkdirSync(path.join(repo, '.git', 'info'), { recursive: true });
+  fs.writeFileSync(path.join(repo, '.git', 'info', 'attributes'), 'status.json eol=crlf\n');
+  const tip = git(bare, 'rev-parse', BRANCH);
+  const r = run(['start', 'feitan', '--verb', 'testing'], { repo });
+  assert.equal(r.code, 1);
+  assert.match(r.stderr, /git attributes/);
+  assert.equal(git(bare, 'rev-parse', BRANCH), tip);
+});
+
+test('status.json is written atomically and no temp file is left behind', () => {
+  const { clones: [repo] } = makeRemote();
+  assert.equal(run(['start', 'feitan', '--verb', 'testing'], { repo }).code, 0);
+  assert.deepEqual(fs.readdirSync(repo).filter((f) => f.includes('.tmp')), []);
 });

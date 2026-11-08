@@ -219,3 +219,21 @@ test('push classification and backoff budget', () => {
     }
   }
 });
+
+test('hard links and invalid UTF-8 are refused', () => {
+  const dir = tmpdir();
+  writeContract(dir);
+  fs.linkSync(path.join(dir, 'status.json'), path.join(tmpdir(), 'alias.json'));
+  assert.ok(check(dir).some((e) => /hard-linked/.test(e)));
+  const dir2 = tmpdir();
+  writeContract(dir2);
+  const raw = fs.readFileSync(path.join(dir2, 'status.json'));
+  fs.writeFileSync(path.join(dir2, 'status.json'), Buffer.concat([raw.subarray(0, 20), Buffer.from([0xff, 0xfe]), raw.subarray(20)]));
+  assert.ok(check(dir2).some((e) => /not valid UTF-8/.test(e)));
+});
+
+test('push classification only trusts git ref status lines', () => {
+  assert.equal(H.classifyPush('remote: failed to update ref: policy\n ! [remote rejected] main -> main (pre-receive hook declined)'), 'fatal');
+  assert.equal(H.classifyPush('remote:  ! [rejected] main -> main (fetch first)\n ! [remote rejected] main -> main (pre-receive hook declined)'), 'fatal');
+  assert.equal(H.classifyPush('fetch first'), 'fatal');
+});

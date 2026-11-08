@@ -31,7 +31,8 @@ hideout idle <member>        # back to idle, no event
   it adds an event only when the verb changes, so progress ticks do not flood
   the event list.
 - `done` needs the member to be working (exit 2 "not working" otherwise).
-  `done` on a member that is already done does nothing and exits 0.
+  `done` on a member that is already done, and `idle` on an idle member, do
+  nothing and exit 0.
 - `since` is when the current state began and moves only when the state
   changes. Every member write sets the member's `updatedAt`.
 
@@ -46,7 +47,9 @@ hideout mission retire "Silk Lantern"
 
 `mission retire` (only after `mission done`) removes the mission from the
 feed: from `missions`, from members' `mission` fields, and every event that
-names it.
+names it. It also works after the codename was already removed from
+`missions.allow` (then in any state), to repair a feed left stuck by doing
+things in the wrong order.
 
 Examples:
 
@@ -73,7 +76,12 @@ first, it fetches again, re-applies the same change to the fresh file and
 retries (up to 10 times, jittered backoff, at most 5 s per wait). Only push
 races are retried; any other refusal by the remote (branch protection, server
 hooks) fails at once. It never force-pushes, and runs git with hooks and
-fsmonitor disabled. It refuses to run if the checkout is on another branch,
+fsmonitor disabled, without signing, and ignoring `GIT_DIR`, `GIT_INDEX_FILE`
+and other `GIT_*` overrides from the caller. Feed commits are authored and
+committed as `hideout <hideout@noreply.invalid>` with UTC dates, so the public
+history does not reveal who ran the tool or their time zone. It refuses to
+run if git attributes (filter, eol, text, encoding) apply to `status.json`,
+and checks that the committed blob is exactly the validated bytes. It refuses to run if the checkout is on another branch,
 has uncommitted changes, or has local commits that are not on the remote.
 
 Members: chrollo, elders, pakunoda, shalnark, kortopi, phinks, feitan, machi,
@@ -128,7 +136,7 @@ branches as usual.
 - `status.json` must be byte-for-byte canonical (`JSON.stringify(doc, null, 2)`
   plus one newline), so duplicate keys or other raw-only content cannot hide
   in the file. `status.json`, `missions.allow` and `schema/allowlist.json`
-  must be regular files, never symlinks.
+  must be regular, non-hard-linked UTF-8 files, never symlinks.
 
 ## Development
 
