@@ -1,0 +1,7 @@
+#!/usr/bin/env node
+'use strict';
+// Update the Hideout status feed (status.json). See README.md.
+const path = require('node:path');
+const { main } = require('../lib/hideout');
+
+process.exitCode = main(process.argv.slice(2), { defaultRepo: path.resolve(__dirname, '..') });
