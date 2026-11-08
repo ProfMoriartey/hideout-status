@@ -1,0 +1,31 @@
+name: test
+
+# The full suite runs only when something other than status.json changed,
+# so routine feed updates do not spend CI minutes.
+on:
+  push:
+    paths-ignore:
+      - status.json
+  pull_request:
+    paths-ignore:
+      - status.json
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    strategy:
+      matrix:
+        node: [18, 20, 22]
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@39370e3970a6d050c480ffad4ff0ed4d3fdee5af # v4.1.0
+        with:
+          node-version: ${{ matrix.node }}
+      - name: Tests
+        run: node --test

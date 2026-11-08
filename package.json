@@ -1,0 +1,13 @@
+{
+  "name": "hideout-status",
+  "private": true,
+  "description": "Live status feed for the Hideout site, and the tool that updates it.",
+  "license": "UNLICENSED",
+  "type": "commonjs",
+  "engines": { "node": ">=18" },
+  "bin": { "hideout": "bin/hideout" },
+  "scripts": {
+    "check": "node bin/check.js",
+    "test": "node --test"
+  }
+}
