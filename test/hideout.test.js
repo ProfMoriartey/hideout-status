@@ -3,54 +3,65 @@ const test = require('node:test');
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
-const { BRANCH, git, makeRemote, remoteFeed, run, runAsync } = require('./helpers');
+const { execFileSync } = require('node:child_process');
+const { BRANCH, TOOL, git, tmpdir, makeRemote, remoteFeed, run, runAsync } = require('./helpers');
+
+const tick = () => new Promise((r) => setTimeout(r, 5));
 
 const M = '--mission';
 
-test('privacy guard: bad input is rejected, nothing is written', () => {
+const PROGRESS_MSG = '--progress must be N/M with 0 <= N <= M, 1 <= M <= 999';
+const PRIVACY_CASES = [
+  [['start', 'feitan', '--verb', 'hacking the mainframe'], 'verb not allowed'],
+  [['start', 'feitan', '--verb', 'hacking'], 'verb not allowed'],
+  [['start', 'feitan', '--verb', 'Testing'], 'verb not allowed'],
+  [['start', 'feitan'], 'start needs --verb'],
+  [['start', 'hisoka', '--verb', 'testing'], 'unknown member'],
+  [['start', 'Feitan', '--verb', 'testing'], 'unknown member'],
+  [['start', 'feitan', '--verb', 'testing', M, 'Secret Op'], 'mission not in missions.allow'],
+  [['start', 'feitan', '--verb', 'testing', M, 'silk lantern'], 'invalid mission codename'],
+  [['start', 'feitan', '--verb', 'testing', M, 'Silk Lantern Rising Now'], 'invalid mission codename'],
+  [['start', 'feitan', '--verb', 'testing', '--progress', '6/5'], PROGRESS_MSG],
+  [['start', 'feitan', '--verb', 'testing', '--progress', '1/1000'], PROGRESS_MSG],
+  [['start', 'feitan', '--verb', 'testing', '--progress', '99999/99999'], PROGRESS_MSG],
+  [['start', 'feitan', '--verb', 'testing', 'extra'], 'expected a command and exactly one member'],
+  [['start', 'feitan', '--verb', 'testing', '--note', 'hi'], 'unknown flag'],
+  [['start', 'feitan', '--verb', 'testing', '--verb', 'building'], 'duplicate flag'],
+  [['start', 'feitan', '--verb', 'testing', '--tickets', '1/2'], 'flag not valid for this command'],
+  [['start', 'feitan', '--verb', 'testing', '-x'], 'unknown flag'],
+  [['start', 'feitan', '--verb', 'testing; rm -rf /'], 'verb not allowed'],
+  [['start', 'feitan', '--verb', '$(whoami)'], 'verb not allowed'],
+  [['start', 'feitan', '--verb', 'testing\nSigned-off-by: x'], 'verb not allowed'],
+  [['start', 'feitan', '--verb', 'testing', M, 'Silk Lantern"}'], 'invalid mission codename'],
+  [['start', '../feitan', '--verb', 'testing'], 'unknown member'],
+  [['start', '__proto__', '--verb', 'testing'], 'unknown member'],
+  [['start', 'feitan', '--verb', 'constructor'], 'verb not allowed'],
+  [['start', 'feitan', '--verb', '--progress', '1/2'], 'flag needs a value'],
+  [['start', 'feitan', '--verb', 'testing', '--branch', '--force'], 'flag needs a value'],
+  [['start', 'feitan', '--verb', 'testing', '--branch', '../../x'], 'invalid branch name'],
+  [['start', 'feitan', '--verb', 'testing', '--branch', 'HEAD'], 'invalid branch name'],
+  [['start', 'feitan', '--verb', 'testing', '--branch', 'refs/heads/main'], 'invalid branch name'],
+  [['done', 'feitan', '--verb', 'testing'], 'flag not valid for this command'],
+  [['done', 'feitan'], 'not working'],
+  [['progress', 'feitan', '--verb', 'testing'], 'not working'],
+  [['idle'], 'expected a command and exactly one member'],
+  [['dance', 'feitan'], 'unknown command'],
+  [['mission', 'start', 'Unknown Op'], 'mission not in missions.allow'],
+  [['mission', 'start', 'Silk Lantern', '--tickets', '3/1000'], '--tickets must be N/M with 0 <= N <= M, 1 <= M <= 999'],
+  [['mission', 'start', 'Silk Lantern', 'extra'], 'expected: hideout mission start|progress|done|retire <codename>'],
+  [['mission', 'launch', 'Silk Lantern'], 'unknown command'],
+  [['mission', 'progress', 'Silk Lantern'], 'mission progress needs --tickets'],
+  [['mission', 'retire', 'Unknown Op'], 'mission not in missions.allow'],
+  [['progress', 'feitan'], 'progress needs --verb and/or --progress'],
+];
+
+test('privacy guard: bad input exits 2 with the exact message, nothing is written', () => {
   const { bare, clones: [repo] } = makeRemote();
   const before = git(bare, 'rev-parse', BRANCH);
-  const bad = [
-    ['start', 'feitan', '--verb', 'hacking the mainframe'],
-    ['start', 'feitan', '--verb', 'hacking'],
-    ['start', 'feitan', '--verb', 'Testing'],
-    ['start', 'feitan'],
-    ['start', 'hisoka', '--verb', 'testing'],
-    ['start', 'Feitan', '--verb', 'testing'],
-    ['start', 'feitan', '--verb', 'testing', M, 'Secret Op'],
-    ['start', 'feitan', '--verb', 'testing', M, 'silk lantern'],
-    ['start', 'feitan', '--verb', 'testing', M, 'Silk Lantern Rising Now'],
-    ['start', 'feitan', '--verb', 'testing', '--progress', '6/5'],
-    ['start', 'feitan', '--verb', 'testing', '--progress', '1/1000'],
-    ['start', 'feitan', '--verb', 'testing', '--progress', '99999/99999'],
-    ['start', 'feitan', '--verb', 'testing', 'extra'],
-    ['start', 'feitan', '--verb', 'testing', '--note', 'hi'],
-    ['start', 'feitan', '--verb', 'testing', '--verb', 'building'],
-    ['start', 'feitan', '--verb', 'testing', '--tickets', '1/2'],
-    ['start', 'feitan', '--verb', 'testing', '-x'],
-    ['start', 'feitan', '--verb', 'testing; rm -rf /'],
-    ['start', 'feitan', '--verb', '$(whoami)'],
-    ['start', 'feitan', '--verb', 'testing\nSigned-off-by: x'],
-    ['start', 'feitan', '--verb', 'testing', M, 'Silk Lantern"}'],
-    ['start', '../feitan', '--verb', 'testing'],
-    ['start', '__proto__', '--verb', 'testing'],
-    ['start', 'feitan', '--verb', 'constructor'],
-    ['start', 'feitan', '--verb', 'testing', '--branch', '--force'],
-    ['start', 'feitan', '--verb', 'testing', '--branch', '../../x'],
-    ['done', 'feitan', '--verb', 'testing'],
-    ['idle'],
-    ['dance', 'feitan'],
-    ['mission', 'start', 'Unknown Op'],
-    ['mission', 'start', 'Silk Lantern', '--tickets', '3/1000'],
-    ['mission', 'start', 'Silk Lantern', 'extra'],
-    ['mission', 'launch', 'Silk Lantern'],
-    ['mission', 'progress', 'Silk Lantern'],
-    ['progress', 'feitan'],
-  ];
-  for (const args of bad) {
-    const r = run(args, { repo });
-    assert.notEqual(r.code, 0, `expected rejection: ${JSON.stringify(args)}`);
-    assert.match(r.stderr, /^hideout: /, JSON.stringify(args));
+  for (const [args, msg] of PRIVACY_CASES) {
+    const r = args.includes('--branch') ? run([...args, '--repo', repo]) : run(args, { repo });
+    assert.equal(r.code, 2, `expected exit 2: ${JSON.stringify(args)} ${r.stderr}`);
+    assert.equal(r.stderr.split('\n')[0], `hideout: ${msg}`, JSON.stringify(args));
     assert.equal(r.stdout, '');
   }
   assert.equal(git(bare, 'rev-parse', BRANCH), before, 'remote unchanged');
@@ -64,49 +75,84 @@ test('--dry-run prints the new JSON and commits nothing', () => {
   assert.equal(r.code, 0, r.stderr);
   const doc = JSON.parse(r.stdout);
   assert.deepEqual(
-    { ...doc.members.feitan, since: undefined },
-    { state: 'working', verb: 'interrogating', mission: 'Silk Lantern', progress: { done: 2, total: 5 }, since: undefined },
+    { ...doc.members.feitan, since: undefined, updatedAt: undefined },
+    { state: 'working', verb: 'interrogating', mission: 'Silk Lantern', progress: { done: 2, total: 5 }, since: undefined, updatedAt: undefined },
   );
   assert.deepEqual(Object.keys(doc.events[0]).sort(), ['at', 'kind', 'mission', 'verb', 'who']);
   assert.equal(git(bare, 'rev-parse', BRANCH), before);
   assert.equal(git(repo, 'status', '--porcelain'), '');
 });
 
-test('start -> progress -> done -> idle transitions and events', () => {
+test('start -> progress -> done -> idle: since, updatedAt and events', async () => {
   const { bare, clones: [repo] } = makeRemote();
   let r = run(['start', 'feitan', '--verb', 'interrogating', M, 'Silk Lantern'], { repo });
   assert.equal(r.code, 0, r.stderr);
   let feed = remoteFeed(bare);
   assert.equal(feed.members.feitan.state, 'working');
   const started = feed.members.feitan.since;
+  assert.equal(feed.members.feitan.updatedAt, started);
   assert.equal(git(bare, 'log', '-1', '--format=%s', BRANCH), 'hideout: feitan start interrogating');
+  await tick();
 
   r = run(['progress', 'feitan', '--progress', '3/5'], { repo });
   assert.equal(r.code, 0, r.stderr);
   feed = remoteFeed(bare);
   assert.deepEqual(feed.members.feitan.progress, { done: 3, total: 5 });
   assert.equal(feed.members.feitan.since, started, 'progress keeps since');
-  assert.equal(feed.events[0].kind, 'progress');
+  assert.ok(feed.members.feitan.updatedAt > started, 'progress moves updatedAt');
+  assert.deepEqual(feed.events.map((e) => e.kind), ['start'], 'a progress tick adds no event');
+  await tick();
+
+  r = run(['progress', 'feitan', '--verb', 'questioning'], { repo });
+  assert.equal(r.code, 0, r.stderr);
+  feed = remoteFeed(bare);
+  assert.equal(feed.members.feitan.since, started);
+  assert.deepEqual(feed.members.feitan.progress, { done: 3, total: 5 }, 'progress kept');
+  assert.deepEqual(feed.events[0], { at: feed.updatedAt, who: 'feitan', kind: 'progress', verb: 'questioning', mission: 'Silk Lantern' });
+  await tick();
+
+  r = run(['start', 'feitan', '--verb', 'interrogating', M, 'Silk Lantern'], { repo });
+  assert.equal(r.code, 0, r.stderr);
+  assert.equal(remoteFeed(bare).members.feitan.since, started, 'start while working keeps since');
+  await tick();
 
   r = run(['done', 'feitan'], { repo });
   assert.equal(r.code, 0, r.stderr);
   feed = remoteFeed(bare);
   assert.equal(feed.members.feitan.state, 'done');
+  assert.ok(feed.members.feitan.since > started, 'state change moves since');
+  assert.equal(feed.members.feitan.updatedAt, feed.members.feitan.since);
   assert.equal(feed.members.feitan.verb, 'interrogating');
   assert.deepEqual(feed.events[0], { at: feed.updatedAt, who: 'feitan', kind: 'done', verb: 'interrogating', mission: 'Silk Lantern' });
   assert.equal(git(bare, 'log', '-1', '--format=%s', BRANCH), 'hideout: feitan done');
 
+  // done again: no-op, exit 0, no commit
+  const tip = git(bare, 'rev-parse', BRANCH);
+  r = run(['done', 'feitan'], { repo });
+  assert.equal(r.code, 0, r.stderr);
+  assert.match(r.stderr, /nothing to change/);
+  assert.equal(git(bare, 'rev-parse', BRANCH), tip);
+
   // progress is only valid while working
-  assert.notEqual(run(['progress', 'feitan', '--verb', 'testing'], { repo }).code, 0);
+  r = run(['progress', 'feitan', '--verb', 'testing'], { repo });
+  assert.equal(r.code, 2);
+  assert.equal(r.stderr.trim(), 'hideout: not working');
+  await tick();
 
   r = run(['idle', 'feitan'], { repo });
   assert.equal(r.code, 0, r.stderr);
   feed = remoteFeed(bare);
-  assert.deepEqual(Object.keys(feed.members.feitan).sort(), ['since', 'state']);
+  assert.deepEqual(Object.keys(feed.members.feitan), ['state', 'since', 'updatedAt']);
   assert.equal(feed.members.feitan.state, 'idle');
-  assert.deepEqual(feed.events.map((e) => e.kind), ['done', 'progress', 'start'], 'idle adds no event');
-  // newest first
-  assert.ok(feed.events[0].at >= feed.events[1].at && feed.events[1].at >= feed.events[2].at);
+  assert.deepEqual(feed.events.map((e) => e.kind), ['done', 'start', 'progress', 'start'], 'idle adds no event');
+  assert.ok(feed.events.every((e, i, a) => i === 0 || a[i - 1].at >= e.at), 'newest first');
+  const idleSince = feed.members.feitan.since;
+  await tick();
+  assert.equal(run(['idle', 'feitan'], { repo }).code, 0);
+  feed = remoteFeed(bare);
+  assert.equal(feed.members.feitan.since, idleSince, 'idle while idle keeps since');
+  assert.ok(feed.members.feitan.updatedAt > idleSince);
+  assert.notEqual(run(['done', 'feitan'], { repo }).code, 0, 'done needs working');
 });
 
 test('mission start/progress/done use who chrollo', () => {
@@ -127,6 +173,32 @@ test('mission start/progress/done use who chrollo', () => {
   ]);
   assert.equal(git(bare, 'log', '-1', '--format=%s', BRANCH), 'hideout: mission done Silk Lantern');
   assert.notEqual(run(['mission', 'progress', 'Silk Lantern', '--tickets', '1/2'], { repo }).code, 0, 'not active');
+});
+
+test('mission retire removes every trace of a finished mission', () => {
+  const { bare, clones: [repo] } = makeRemote();
+  assert.equal(run(['mission', 'start', 'Blue Moth'], { repo }).code, 0);
+  assert.equal(run(['mission', 'start', 'Silk Lantern'], { repo }).code, 0);
+  assert.equal(run(['start', 'feitan', '--verb', 'testing', M, 'Blue Moth'], { repo }).code, 0);
+  assert.equal(run(['start', 'machi', '--verb', 'stitching', M, 'Silk Lantern'], { repo }).code, 0);
+  let r = run(['mission', 'retire', 'Blue Moth'], { repo });
+  assert.equal(r.code, 2);
+  assert.equal(r.stderr.trim(), 'hideout: mission is active; run mission done first');
+  assert.equal(run(['mission', 'done', 'Blue Moth'], { repo }).code, 0);
+  r = run(['mission', 'retire', 'Blue Moth'], { repo });
+  assert.equal(r.code, 0, r.stderr);
+  const feed = remoteFeed(bare);
+  assert.equal(git(bare, 'log', '-1', '--format=%s', BRANCH), 'hideout: mission retire Blue Moth');
+  assert.ok(!JSON.stringify(feed).includes('Blue Moth'), 'no trace left');
+  assert.deepEqual(feed.missions.map((x) => x.codename), ['Silk Lantern']);
+  assert.equal(feed.members.feitan.state, 'working');
+  assert.equal(feed.members.feitan.mission, undefined);
+  assert.equal(feed.members.machi.mission, 'Silk Lantern');
+  assert.ok(feed.events.some((e) => e.mission === 'Silk Lantern'));
+  // retiring again is a no-op
+  const tip = git(bare, 'rev-parse', BRANCH);
+  assert.equal(run(['mission', 'retire', 'Blue Moth'], { repo }).code, 0);
+  assert.equal(git(bare, 'rev-parse', BRANCH), tip);
 });
 
 test('events are capped at 20, newest first', () => {
@@ -177,30 +249,83 @@ test('the allowlist on the remote tip is what counts', () => {
   assert.equal(r.code, 0, r.stderr);
 });
 
-test('concurrency: a push rejected mid-flight is re-applied on the fresh tip', () => {
-  const { bare, clones: [a, b] } = makeRemote(2);
-  // Clone a's pre-push hook makes clone b win the race once.
-  const hook = path.join(a, '.git', 'hooks', 'pre-push');
-  const marker = path.join(a, '.git', 'raced');
-  fs.writeFileSync(hook, `#!/bin/sh
-if [ ! -e "${marker}" ]; then
-  touch "${marker}"
-  "${process.execPath}" "${path.resolve(__dirname, '..', 'bin', 'hideout')}" start phinks --verb wiring --repo "${b}" --branch ${BRANCH} >/dev/null 2>&1 || exit 1
-fi
-exit 0
+/**
+ * A `git` wrapper on PATH that, when the tool pushes, first lets clone `other`
+ * win the race by running the tool there (once, or on every push).
+ */
+function raceEnv(other, mode) {
+  const dir = tmpdir();
+  const realGit = execFileSync('sh', ['-c', 'command -v git'], { encoding: 'utf8' }).trim();
+  const wrapper = path.join(dir, 'git');
+  fs.writeFileSync(wrapper, `#!/bin/sh
+for a in "$@"; do
+  if [ "$a" = push ]; then
+    if [ "${mode}" = always ] || [ ! -e "${dir}/raced" ]; then
+      touch "${dir}/raced"
+      PATH="$REAL_PATH" "${process.execPath}" "${TOOL}" start phinks --verb wiring --repo "${other}" --branch ${BRANCH} >/dev/null 2>&1 || exit 97
+    fi
+    break
+  fi
+done
+exec "${realGit}" "$@"
 `, { mode: 0o755 });
-  const r = run(['start', 'feitan', '--verb', 'interrogating'], { repo: a });
+  return { PATH: `${dir}:${process.env.PATH}`, REAL_PATH: process.env.PATH, HIDEOUT_RETRY_BASE_MS: '10' };
+}
+
+test('concurrency: two clones race, the loser retries on the fresh tip, no lost update', () => {
+  const { bare, clones: [a, b] } = makeRemote(2);
+  const r = run(['start', 'feitan', '--verb', 'interrogating'], { repo: a, env: raceEnv(b, 'once') });
   assert.equal(r.code, 0, r.stderr);
-  assert.match(r.stderr, /push rejected, retrying/);
+  assert.match(r.stderr, /push rejected, retrying/, 'a retry really happened');
+  assert.match(r.stderr, /after 1 retry/);
   const feed = remoteFeed(bare);
   assert.equal(feed.members.feitan.state, 'working');
   assert.equal(feed.members.phinks.state, 'working', 'no lost update');
   assert.deepEqual(feed.events.map((e) => e.who), ['feitan', 'phinks']);
   const log = git(bare, 'log', '--format=%s', BRANCH).split('\n');
   assert.deepEqual(log.slice(0, 2), ['hideout: feitan start interrogating', 'hideout: phinks start wiring']);
+  assert.equal(git(bare, 'rev-list', '--merges', '--count', BRANCH), '0', 'linear history');
 });
 
-test('concurrency: two clones racing pushes both land', async () => {
+test('retry exhaustion: gives up after 10 retries, writes nothing, leaves the clone clean', () => {
+  const { bare, clones: [a, b] } = makeRemote(2);
+  const r = run(['start', 'feitan', '--verb', 'interrogating'], { repo: a, env: raceEnv(b, 'always') });
+  assert.equal(r.code, 1);
+  assert.equal((r.stderr.match(/push rejected, retrying/g) ?? []).length, 10);
+  assert.match(r.stderr, /still rejected after 10 retries/);
+  assert.equal(remoteFeed(bare).members.feitan.state, 'idle');
+  assert.equal(git(a, 'status', '--porcelain'), '');
+  assert.equal(git(a, 'rev-parse', 'HEAD'), git(a, 'rev-parse', `origin/${BRANCH}`));
+});
+
+test('a non-race rejection (server hook, branch protection) fails fast', () => {
+  const { bare, clones: [repo] } = makeRemote();
+  const hook = path.join(bare, 'hooks', 'pre-receive');
+  fs.writeFileSync(hook, '#!/bin/sh\necho "protected branch" >&2\nexit 1\n', { mode: 0o755 });
+  const tip = git(bare, 'rev-parse', BRANCH);
+  const r = run(['start', 'feitan', '--verb', 'testing'], { repo });
+  assert.equal(r.code, 1);
+  assert.doesNotMatch(r.stderr, /retrying/);
+  assert.match(r.stderr, /branch protection/);
+  assert.equal(git(bare, 'rev-parse', BRANCH), tip);
+  assert.equal(git(repo, 'status', '--porcelain'), '');
+});
+
+test('refuses a non-canonical status.json on the remote (duplicate keys)', () => {
+  const { bare, clones: [a, b] } = makeRemote(2);
+  const file = path.join(b, 'status.json');
+  const raw = fs.readFileSync(file, 'utf8');
+  fs.writeFileSync(file, raw.replace('"version": 1,', '"version": 1,\n  "version": 1,'));
+  git(b, 'commit', '--quiet', '-am', 'hand edit');
+  git(b, 'push', '--quiet', 'origin', BRANCH);
+  const tip = git(bare, 'rev-parse', BRANCH);
+  const r = run(['start', 'feitan', '--verb', 'testing'], { repo: a });
+  assert.equal(r.code, 1);
+  assert.match(r.stderr, /not in canonical form/);
+  assert.equal(git(bare, 'rev-parse', BRANCH), tip);
+});
+
+test('concurrency: two clones racing in parallel both land every update', async () => {
   const { bare, clones: [a, b] } = makeRemote(2);
   const rounds = 4;
   const verbsA = ['testing', 'building', 'fixing', 'wiring'];
@@ -217,8 +342,6 @@ test('concurrency: two clones racing pushes both land', async () => {
   assert.equal(feed.members.feitan.verb, 'wiring');
   assert.equal(feed.members.machi.verb, 'reading');
   assert.equal(feed.events.length, rounds * 2, 'every update kept');
-  const commits = git(bare, 'rev-list', '--count', BRANCH);
-  assert.equal(Number(commits), 1 + rounds * 2);
-  // history is linear: no force-push, no merge commits
+  assert.equal(Number(git(bare, 'rev-list', '--count', BRANCH)), 1 + rounds * 2);
   assert.equal(git(bare, 'rev-list', '--merges', '--count', BRANCH), '0');
 });

@@ -15,7 +15,7 @@ function check(repo) {
   }
   let doc;
   try {
-    doc = JSON.parse(V.readSmall(path.join(repo, 'status.json')));
+    doc = V.parseStatus(V.readSmall(repo, 'status.json'));
   } catch (e) {
     return [...errors, `status.json: ${e.message}`];
   }
