@@ -1,5 +1,7 @@
 name: check
 
+# Feed validation runs on every push and pull request, including the
+# status.json-only commits made by bin/hideout.
 on:
   push:
   pull_request:
@@ -10,7 +12,7 @@ permissions:
 jobs:
   check:
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 5
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
         with:
@@ -20,5 +22,3 @@ jobs:
           node-version: 20
       - name: Validate status.json and missions.allow
         run: node bin/check.js
-      - name: Tests
-        run: node --test

@@ -10,7 +10,8 @@ structured fields (for example `kind: done` + `verb: interrogating` becomes
 - `schema/allowlist.json`: the member ids and the verb list
 - `missions.allow`: mission codenames that may appear, one per line
 - `bin/hideout`: the only tool that writes the feed
-- `bin/check.js`: the CI check (also run by `.github/workflows/check.yml`)
+- `bin/check.js`: the CI check (`.github/workflows/check.yml`, every push;
+  the test suite runs in `test.yml` when anything besides `status.json` changes)
 - `lib/validate.js`: the validation rules shared by both
 
 Needs Node 18 or newer and git. No npm packages.
@@ -24,13 +25,28 @@ hideout done <member>        # the site celebrates, then shows the member idle
 hideout idle <member>        # back to idle, no event
 ```
 
+- `start` sets the member working. Starting again while working changes the
+  verb/mission/progress but keeps `since`.
+- `progress` needs the member to be working. It always updates the state;
+  it adds an event only when the verb changes, so progress ticks do not flood
+  the event list.
+- `done` needs the member to be working (exit 2 "not working" otherwise).
+  `done` on a member that is already done does nothing and exits 0.
+- `since` is when the current state began and moves only when the state
+  changes. Every member write sets the member's `updatedAt`.
+
 Missions (events are recorded as `chrollo`):
 
 ```sh
 hideout mission start "Silk Lantern" [--tickets 0/12]
 hideout mission progress "Silk Lantern" --tickets 4/12
 hideout mission done "Silk Lantern" [--tickets 12/12]
+hideout mission retire "Silk Lantern"
 ```
+
+`mission retire` (only after `mission done`) removes the mission from the
+feed: from `missions`, from members' `mission` fields, and every event that
+names it.
 
 Examples:
 
@@ -42,20 +58,23 @@ hideout done feitan
 
 Options:
 
-- `--dry-run` prints the new `status.json` and changes nothing (it reads the
-  local checkout without fetching).
+- `--dry-run` prints the new `status.json` and changes nothing. It does not
+  fetch: it reads the local checkout as it is, which may be behind `main`.
 - `--repo <path>` or `HIDEOUT_REPO=<path>`: the checkout to update. Default:
   the checkout that contains the script.
 - `--branch <name>`: default `main`. Tests use a scratch branch.
 
-Run it from a dedicated clone of this repo with `main` checked out and nothing
-uncommitted. Each call fetches, fast-forwards to the remote tip, applies the
+Use one dedicated clone per session (or point `HIDEOUT_REPO` at it), with
+`main` checked out and nothing uncommitted. Do not share a clone between
+sessions running at the same time. Each call fetches, fast-forwards to the remote tip, applies the
 change, validates the whole file, commits `status.json` with a fixed message
 (`hideout: feitan start interrogating`) and pushes. If another session pushed
 first, it fetches again, re-applies the same change to the fresh file and
-retries (up to 5 times, jittered backoff). It never force-pushes. It refuses
-to run if the checkout is on another branch, has uncommitted changes, or has
-local commits that are not on the remote.
+retries (up to 10 times, jittered backoff, at most 5 s per wait). Only push
+races are retried; any other refusal by the remote (branch protection, server
+hooks) fails at once. It never force-pushes, and runs git with hooks and
+fsmonitor disabled. It refuses to run if the checkout is on another branch,
+has uncommitted changes, or has local commits that are not on the remote.
 
 Members: chrollo, elders, pakunoda, shalnark, kortopi, phinks, feitan, machi,
 nobunaga, franklin, shizuku, bonolenov, kalluto.
@@ -66,7 +85,7 @@ folding, forging, guarding, interrogating, planning, questioning, reading,
 refactoring, researching, reviewing, scheduling, sketching, stitching, testing,
 tracking, wiring.
 
-## Adding a mission codename (Chrollo)
+## Mission codenames (Chrollo)
 
 When a mission is agreed, Chrollo adds its codename to `missions.allow` on
 `main`, one per line, exact case:
@@ -80,6 +99,15 @@ git commit -am "missions: allow Blue Moth" && git push origin main
 A codename is one to three capitalised words of letters only
 (`^[A-Z][a-z]+( [A-Z][a-z]+){0,2}$`). Pick a codename that says nothing about
 the real work. Until it is listed, `hideout` and CI reject it.
+
+To take a codename out again, in this order:
+
+1. `hideout mission done "<codename>"`
+2. `hideout mission retire "<codename>"` (the codename must still be listed)
+3. remove its line from `missions.allow`, run `node bin/check.js`, commit, push
+
+Removing the line first would make the feed invalid while it still names the
+mission.
 
 ## Feed updates go to main
 
@@ -96,7 +124,11 @@ branches as usual.
   Unknown flags, extra arguments and extra JSON fields are rejected.
 - The tool validates every write; CI validates every push and pull request.
   A rejected command exits non-zero, prints a short error, and writes nothing.
-- Error messages do not echo the rejected value.
+- Error messages do not echo the rejected value or file content.
+- `status.json` must be byte-for-byte canonical (`JSON.stringify(doc, null, 2)`
+  plus one newline), so duplicate keys or other raw-only content cannot hide
+  in the file. `status.json`, `missions.allow` and `schema/allowlist.json`
+  must be regular files, never symlinks.
 
 ## Development
 
