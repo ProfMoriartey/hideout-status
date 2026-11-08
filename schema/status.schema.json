@@ -1,0 +1,77 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/ProfMoriartey/hideout-status/schema/status.schema.json",
+  "title": "Hideout status feed, version 1",
+  "description": "Only codenames, allowlisted verbs and allowlisted mission codenames. No free text. Member ids and verbs must also appear in schema/allowlist.json; mission codenames must also appear in missions.allow (checked by bin/hideout and CI, not expressible here).",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["version", "updatedAt", "missions", "members", "events"],
+  "properties": {
+    "version": { "const": 1 },
+    "updatedAt": { "$ref": "#/$defs/time" },
+    "missions": {
+      "type": "array",
+      "maxItems": 10,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["codename", "state", "startedAt"],
+        "properties": {
+          "codename": { "$ref": "#/$defs/mission" },
+          "state": { "enum": ["active", "done"] },
+          "startedAt": { "$ref": "#/$defs/time" },
+          "endedAt": { "$ref": "#/$defs/time" },
+          "tickets": { "$ref": "#/$defs/count" }
+        }
+      }
+    },
+    "members": {
+      "type": "object",
+      "propertyNames": { "$ref": "#/$defs/memberId" },
+      "additionalProperties": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["state", "since"],
+        "properties": {
+          "state": { "enum": ["idle", "working", "done"] },
+          "since": { "$ref": "#/$defs/time" },
+          "verb": { "$ref": "#/$defs/verb" },
+          "mission": { "$ref": "#/$defs/mission" },
+          "progress": { "$ref": "#/$defs/count" }
+        }
+      }
+    },
+    "events": {
+      "type": "array",
+      "maxItems": 20,
+      "description": "Newest first. The site builds the visible text from kind + verb/mission, e.g. 'Feitan finished interrogating'.",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["at", "who", "kind"],
+        "properties": {
+          "at": { "$ref": "#/$defs/time" },
+          "who": { "$ref": "#/$defs/memberId" },
+          "kind": { "enum": ["start", "progress", "done", "mission-start", "mission-progress", "mission-done"] },
+          "verb": { "$ref": "#/$defs/verb" },
+          "mission": { "$ref": "#/$defs/mission" }
+        }
+      }
+    }
+  },
+  "$defs": {
+    "time": { "type": "string", "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(\\.\\d{1,3})?Z$" },
+    "memberId": { "enum": ["chrollo", "elders", "pakunoda", "shalnark", "kortopi", "phinks", "feitan", "machi", "nobunaga", "franklin", "shizuku", "bonolenov", "kalluto"] },
+    "verb": { "type": "string", "pattern": "^[a-z]{3,20}$" },
+    "mission": { "type": "string", "pattern": "^[A-Z][a-z]+( [A-Z][a-z]+){0,2}$" },
+    "count": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["done", "total"],
+      "properties": {
+        "done": { "type": "integer", "minimum": 0, "maximum": 999 },
+        "total": { "type": "integer", "minimum": 1, "maximum": 999 }
+      }
+    }
+  }
+}
