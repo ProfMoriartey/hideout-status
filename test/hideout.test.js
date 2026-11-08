@@ -453,3 +453,88 @@ test('status.json is written atomically and no temp file is left behind', () => 
   assert.equal(run(['start', 'feitan', '--verb', 'testing'], { repo }).code, 0);
   assert.deepEqual(fs.readdirSync(repo).filter((f) => f.includes('.tmp')), []);
 });
+
+const dropAllow = (clone, text) => {
+  git(clone, 'pull', '--quiet', 'origin', BRANCH);
+  fs.writeFileSync(path.join(clone, 'missions.allow'), text);
+  git(clone, 'commit', '--quiet', '-am', 'edit missions.allow');
+  git(clone, 'push', '--quiet', 'origin', BRANCH);
+};
+
+test('two codenames removed early can both be retired in turn', () => {
+  const { bare, clones: [a, b] } = makeRemote(2);
+  for (const m of ['Silk Lantern', 'Blue Moth']) {
+    assert.equal(run(['mission', 'start', m], { repo: a }).code, 0);
+    assert.equal(run(['mission', 'done', m], { repo: a }).code, 0);
+  }
+  assert.equal(run(['start', 'feitan', '--verb', 'testing', M, 'Silk Lantern'], { repo: a }).code, 0);
+  dropAllow(b, 'Other One\n');
+  for (const m of ['Blue Moth', 'Silk Lantern']) {
+    const r = run(['mission', 'retire', m], { repo: a });
+    assert.equal(r.code, 0, r.stderr);
+  }
+  assert.doesNotMatch(JSON.stringify(remoteFeed(bare)), /Blue Moth|Silk Lantern/);
+  git(b, 'pull', '--quiet', 'origin', BRANCH);
+  assert.deepEqual(require('../bin/check.js').check(b), []);
+});
+
+test('retire of a stale codename that is still an active mission', () => {
+  const { bare, clones: [a, b] } = makeRemote(2);
+  assert.equal(run(['mission', 'start', 'Blue Moth'], { repo: a }).code, 0);
+  dropAllow(b, 'Silk Lantern\n');
+  const r = run(['mission', 'retire', 'Blue Moth'], { repo: a });
+  assert.equal(r.code, 0, r.stderr);
+  assert.deepEqual(remoteFeed(bare).missions, []);
+  git(b, 'pull', '--quiet', 'origin', BRANCH);
+  assert.deepEqual(require('../bin/check.js').check(b), []);
+  // Still refused while the codename is allowed.
+  assert.equal(run(['mission', 'start', 'Silk Lantern'], { repo: a }).code, 0);
+  const r2 = run(['mission', 'retire', 'Silk Lantern'], { repo: a });
+  assert.equal(r2.code, 2);
+  assert.match(r2.stderr, /mission is active; run mission done first/);
+});
+
+test('core.autocrlf=true in the clone does not break runs after a fast-forward', () => {
+  const { bare, clones: [a, b] } = makeRemote(2);
+  git(a, 'config', 'core.autocrlf', 'true');
+  assert.equal(run(['start', 'feitan', '--verb', 'testing'], { repo: b }).code, 0);
+  let r = run(['start', 'machi', '--verb', 'stitching'], { repo: a });
+  assert.equal(r.code, 0, r.stderr);
+  r = run(['idle', 'machi'], { repo: a });
+  assert.equal(r.code, 0, r.stderr);
+  assert.ok(!git(bare, 'show', `${BRANCH}:status.json`).includes('\r'));
+});
+
+test('a stale temp file with the same pid does not block a run, and the file mode is kept', () => {
+  const { clones: [repo] } = makeRemote();
+  fs.writeFileSync(path.join(repo, `.status.json.${process.pid}.tmp`), 'junk');
+  fs.chmodSync(path.join(repo, 'status.json'), 0o600);
+  const r = run(['start', 'feitan', '--verb', 'testing'], { repo });
+  assert.equal(r.code, 0, r.stderr);
+  assert.equal(fs.statSync(path.join(repo, 'status.json')).mode & 0o777, 0o600);
+});
+
+test('unpushed local commits: the message carries a recovery hint', () => {
+  const { clones: [repo] } = makeRemote();
+  fs.writeFileSync(path.join(repo, 'stray.txt'), 'x');
+  git(repo, 'add', 'stray.txt');
+  git(repo, 'commit', '--quiet', '-m', 'stray');
+  const r = run(['start', 'feitan', '--verb', 'testing'], { repo });
+  assert.equal(r.code, 1);
+  assert.equal(r.stderr, `hideout: local ${BRANCH} has commits not on origin; refusing (would push them) ` +
+    `(inspect with git log origin/${BRANCH}..HEAD; git reset --hard origin/${BRANCH} if it is only a leftover hideout commit)\n`);
+});
+
+test('caller GIT_AUTHOR/COMMITTER identity and non-UTC dates never reach the feed commit', () => {
+  const { bare, clones: [repo] } = makeRemote();
+  const env = {
+    GIT_AUTHOR_NAME: 'Chrollo', GIT_AUTHOR_EMAIL: 'kaito9814@gmail.com',
+    GIT_COMMITTER_NAME: 'Chrollo', GIT_COMMITTER_EMAIL: 'kaito9814@gmail.com',
+    GIT_AUTHOR_DATE: '1700000000 +0900', GIT_COMMITTER_DATE: '1700000000 -0500',
+  };
+  const r = run(['start', 'phinks', '--verb', 'fixing'], { repo, env });
+  assert.equal(r.code, 0, r.stderr);
+  const meta = git(bare, 'log', '-1', '--format=%an <%ae> %ad|%cn <%ce> %cd', '--date=raw', BRANCH);
+  assert.match(meta, /^hideout <hideout@noreply\.invalid> \d+ \+0000\|hideout <hideout@noreply\.invalid> \d+ \+0000$/);
+  assert.doesNotMatch(meta, /1700000000/);
+});
