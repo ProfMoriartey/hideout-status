@@ -6,7 +6,6 @@ const path = require('node:path');
 const V = require('../lib/validate');
 
 function check(repo) {
-  const errors = [];
   let lists;
   try {
     lists = V.loadAllowlists(repo);
@@ -17,9 +16,14 @@ function check(repo) {
   try {
     doc = V.parseStatus(V.readSmall(repo, 'status.json'));
   } catch (e) {
-    return [...errors, `status.json: ${e.message}`];
+    return [`status.json: ${e.message}`];
   }
-  return [...errors, ...V.validateStatus(doc, lists).map((m) => `status.json: ${m}`)];
+  const errors = V.validateStatus(doc, lists).map((m) => `status.json: ${m}`);
+  if (errors.some((m) => /mission not allowed|codename not allowed/.test(m))) {
+    errors.push('hint: a codename was removed from missions.allow while the feed still names it; ' +
+      'run `hideout mission retire "<codename>"` (it works after removal) or restore the line');
+  }
+  return errors;
 }
 
 if (require.main === module) {

@@ -199,6 +199,19 @@ test('push classification and backoff budget', () => {
   assert.equal(H.classifyPush(' ! [remote rejected] main -> main (pre-receive hook declined)'), 'fatal');
   assert.equal(H.classifyPush('fatal: unable to access: Could not resolve host'), 'fatal');
   assert.equal(H.MAX_RETRIES, 10);
+  const saved = process.env.HIDEOUT_RETRY_BASE_MS;
+  try {
+    for (const v of ['', ' ', 'abc', '-5', '1e1', '0x10']) {
+      process.env.HIDEOUT_RETRY_BASE_MS = v;
+      let max = 0;
+      for (let i = 0; i < 200; i++) max = Math.max(max, H.backoffMs(3));
+      assert.ok(max > 200, `junk value ${JSON.stringify(v)} must not disable backoff`);
+    }
+    process.env.HIDEOUT_RETRY_BASE_MS = '5000';
+    for (let i = 0; i < 50; i++) assert.ok(H.backoffMs(0) <= 400, 'env can only lower the base');
+  } finally {
+    if (saved === undefined) delete process.env.HIDEOUT_RETRY_BASE_MS; else process.env.HIDEOUT_RETRY_BASE_MS = saved;
+  }
   for (let a = 0; a <= H.MAX_RETRIES; a++) {
     for (let i = 0; i < 50; i++) {
       const w = H.backoffMs(a);

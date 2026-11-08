@@ -51,15 +51,17 @@ const PRIVACY_CASES = [
   [['mission', 'start', 'Silk Lantern', 'extra'], 'expected: hideout mission start|progress|done|retire <codename>'],
   [['mission', 'launch', 'Silk Lantern'], 'unknown command'],
   [['mission', 'progress', 'Silk Lantern'], 'mission progress needs --tickets'],
-  [['mission', 'retire', 'Unknown Op'], 'mission not in missions.allow'],
+  [['mission', 'retire', 'acme merger'], 'invalid mission codename'],
   [['progress', 'feitan'], 'progress needs --verb and/or --progress'],
+  [['start', 'feitan', '--verb', 'testing', '--repo='], '--repo needs a path'],
 ];
 
 test('privacy guard: bad input exits 2 with the exact message, nothing is written', () => {
   const { bare, clones: [repo] } = makeRemote();
   const before = git(bare, 'rev-parse', BRANCH);
   for (const [args, msg] of PRIVACY_CASES) {
-    const r = args.includes('--branch') ? run([...args, '--repo', repo]) : run(args, { repo });
+    const r = args.includes('--branch') ? run([...args, '--repo', repo])
+      : args.some((a) => a.startsWith('--repo')) ? run([...args, '--branch', BRANCH]) : run(args, { repo });
     assert.equal(r.code, 2, `expected exit 2: ${JSON.stringify(args)} ${r.stderr}`);
     assert.equal(r.stderr.split('\n')[0], `hideout: ${msg}`, JSON.stringify(args));
     assert.equal(r.stdout, '');
@@ -344,4 +346,41 @@ test('concurrency: two clones racing in parallel both land every update', async 
   assert.equal(feed.events.length, rounds * 2, 'every update kept');
   assert.equal(Number(git(bare, 'rev-list', '--count', BRANCH)), 1 + rounds * 2);
   assert.equal(git(bare, 'rev-list', '--merges', '--count', BRANCH), '0');
+});
+
+test('mission retire repairs a feed whose codename was removed from missions.allow first', () => {
+  const { bare, clones: [a, b] } = makeRemote(2);
+  assert.equal(run(['mission', 'start', 'Blue Moth'], { repo: a }).code, 0);
+  assert.equal(run(['start', 'feitan', '--verb', 'testing', M, 'Blue Moth'], { repo: a }).code, 0);
+  // Chrollo removes the line too early (mission still active and referenced).
+  fs.writeFileSync(path.join(b, 'missions.allow'), 'Silk Lantern\n');
+  git(b, 'pull', '--quiet', 'origin', BRANCH);
+  git(b, 'commit', '--quiet', '-am', 'drop Blue Moth');
+  git(b, 'push', '--quiet', 'origin', BRANCH);
+  let r = run(['start', 'machi', '--verb', 'stitching'], { repo: a });
+  assert.equal(r.code, 1, 'feed is stuck until retired');
+  assert.match(r.stderr, /current status.json is invalid/);
+  r = run(['mission', 'retire', 'Blue Moth'], { repo: a });
+  assert.equal(r.code, 0, r.stderr);
+  assert.ok(!JSON.stringify(remoteFeed(bare)).includes('Blue Moth'));
+  assert.equal(run(['start', 'machi', '--verb', 'stitching'], { repo: a }).code, 0, 'feed works again');
+});
+
+test('mission retire of a codename the feed never named is a no-op and never reaches git', () => {
+  const { bare, clones: [repo] } = makeRemote();
+  const tip = git(bare, 'rev-parse', BRANCH);
+  const r = run(['mission', 'retire', 'Acme Merger'], { repo });
+  assert.equal(r.code, 0, r.stderr);
+  assert.match(r.stderr, /nothing to change/);
+  assert.equal(git(bare, 'rev-parse', BRANCH), tip);
+  assert.ok(!git(bare, 'log', '--all', '--format=%B').includes('Acme'));
+});
+
+test('git failures say why', () => {
+  const { clones: [repo] } = makeRemote();
+  git(repo, 'remote', 'set-url', 'origin', path.join(tmpdir(), 'missing.git'));
+  const r = run(['start', 'feitan', '--verb', 'testing'], { repo });
+  assert.equal(r.code, 1);
+  assert.match(r.stderr, /^hideout: git fetch failed: .+/m);
+  assert.doesNotMatch(r.stderr, /Command failed/);
 });
