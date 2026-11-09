@@ -555,3 +555,43 @@ test('caller GIT_AUTHOR/COMMITTER identity and non-UTC dates never reach the fee
   assert.match(meta, /^hideout <hideout@noreply\.invalid> \d+ \+0000\|hideout <hideout@noreply\.invalid> \d+ \+0000$/);
   assert.doesNotMatch(meta, /1700000000/);
 });
+
+test('a run killed after its write (dirty status.json) does not brick the clone', () => {
+  const { bare, clones: [repo] } = makeRemote();
+  fs.writeFileSync(path.join(repo, 'status.json'), '{"half": "written"}\n');
+  const r = run(['start', 'feitan', '--verb', 'testing'], { repo });
+  assert.equal(r.code, 0, r.stderr);
+  assert.match(r.stderr, /restoring status.json left changed by an interrupted run/);
+  assert.equal(remoteFeed(bare).members.feitan.verb, 'testing');
+});
+
+test('a run killed after its commit (unpushed feed commit) does not brick the clone', () => {
+  const { bare, clones: [a, b] } = makeRemote(2);
+  // Leave a feed-identity commit in `a` that never reached origin, then move origin on.
+  fs.writeFileSync(path.join(a, 'status.json'),
+    run(['start', 'machi', '--verb', 'reading', '--dry-run'], { repo: a }).stdout);
+  execFileSync('git', ['-C', a, 'commit', '--quiet', '-am', 'hideout: machi start reading'], {
+    env: { ...process.env, GIT_AUTHOR_NAME: 'hideout', GIT_AUTHOR_EMAIL: 'hideout@noreply.invalid',
+      GIT_COMMITTER_NAME: 'hideout', GIT_COMMITTER_EMAIL: 'hideout@noreply.invalid' },
+  });
+  assert.equal(run(['start', 'phinks', '--verb', 'wiring'], { repo: b }).code, 0);
+  const r = run(['start', 'feitan', '--verb', 'testing'], { repo: a });
+  assert.equal(r.code, 0, r.stderr);
+  assert.match(r.stderr, /dropping an unpushed hideout commit/);
+  const feed = remoteFeed(bare);
+  assert.equal(feed.members.phinks.verb, 'wiring');
+  assert.equal(feed.members.feitan.verb, 'testing');
+  assert.equal(feed.members.machi.verb, undefined, 'the dropped commit was never pushed');
+});
+
+test('a stalled git call times out instead of hanging the session', () => {
+  const { clones: [repo] } = makeRemote();
+  const hang = path.join(repo, '..', 'hang.sh');
+  fs.writeFileSync(hang, '#!/bin/sh\nsleep 30\n', { mode: 0o755 });
+  git(repo, 'config', 'remote.origin.uploadpack', hang);
+  const t0 = Date.now();
+  const r = run(['start', 'feitan', '--verb', 'testing'], { repo, env: { HIDEOUT_GIT_TIMEOUT_MS: '1500' } });
+  assert.equal(r.code, 1);
+  assert.match(r.stderr, /git fetch failed: timed out/);
+  assert.ok(Date.now() - t0 < 15000, 'returned long before the stalled command would have');
+});
