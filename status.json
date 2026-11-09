@@ -1,11 +1,13 @@
 {
   "version": 1,
-  "updatedAt": "2026-11-08T10:36:35.075Z",
+  "updatedAt": "2026-11-09T05:46:00.294Z",
   "missions": [],
   "members": {
     "chrollo": {
-      "state": "idle",
-      "since": "2026-11-08T10:36:35.075Z"
+      "state": "working",
+      "since": "2026-11-09T05:46:00.294Z",
+      "updatedAt": "2026-11-09T05:46:00.294Z",
+      "verb": "planning"
     },
     "elders": {
       "state": "idle",
@@ -56,5 +58,12 @@
       "since": "2026-11-08T10:36:35.075Z"
     }
   },
-  "events": []
+  "events": [
+    {
+      "at": "2026-11-09T05:46:00.294Z",
+      "who": "chrollo",
+      "kind": "start",
+      "verb": "planning"
+    }
+  ]
 }
