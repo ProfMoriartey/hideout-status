@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updatedAt": "2026-11-09T07:56:23.485Z",
+  "updatedAt": "2026-11-09T07:56:25.547Z",
   "missions": [],
   "members": {
     "chrollo": {
@@ -38,14 +38,10 @@
       "verb": "testing"
     },
     "machi": {
-      "state": "working",
-      "since": "2026-11-09T07:56:18.431Z",
-      "updatedAt": "2026-11-09T07:56:18.431Z",
-      "verb": "reviewing",
-      "ticket": {
-        "n": 3,
-        "title": "review"
-      }
+      "state": "done",
+      "since": "2026-11-09T07:56:25.547Z",
+      "updatedAt": "2026-11-09T07:56:25.547Z",
+      "verb": "reviewing"
     },
     "nobunaga": {
       "state": "idle",
@@ -69,6 +65,12 @@
     }
   },
   "events": [
+    {
+      "at": "2026-11-09T07:56:25.547Z",
+      "who": "machi",
+      "kind": "done",
+      "verb": "reviewing"
+    },
     {
       "at": "2026-11-09T07:56:23.485Z",
       "who": "feitan",
