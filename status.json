@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updatedAt": "2026-11-09T06:10:40.229Z",
+  "updatedAt": "2026-11-09T07:17:09.072Z",
   "missions": [],
   "members": {
     "chrollo": {
@@ -22,8 +22,14 @@
       "since": "2026-11-08T10:36:35.075Z"
     },
     "kortopi": {
-      "state": "idle",
-      "since": "2026-11-08T10:36:35.075Z"
+      "state": "working",
+      "since": "2026-11-09T07:17:09.072Z",
+      "updatedAt": "2026-11-09T07:17:09.072Z",
+      "verb": "testing",
+      "ticket": {
+        "n": 1,
+        "title": "tests"
+      }
     },
     "phinks": {
       "state": "idle",
@@ -59,6 +65,16 @@
     }
   },
   "events": [
+    {
+      "at": "2026-11-09T07:17:09.072Z",
+      "who": "kortopi",
+      "kind": "start",
+      "verb": "testing",
+      "ticket": {
+        "n": 1,
+        "title": "tests"
+      }
+    },
     {
       "at": "2026-11-09T06:10:40.229Z",
       "who": "chrollo",
