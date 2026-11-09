@@ -82,7 +82,12 @@ committed as `hideout <hideout@noreply.invalid>` with UTC dates, so the public
 history does not reveal who ran the tool or their time zone. It refuses to
 run if git attributes (filter, eol, text, encoding) apply to `status.json`,
 and checks that the committed blob is exactly the validated bytes. It refuses to run if the checkout is on another branch,
-has uncommitted changes, or has local commits that are not on the remote.
+has uncommitted changes, or has local commits that are not on the remote,
+with two recoveries for a run that was killed part-way: a tree whose only
+change is `status.json` is reset (so a hand edit of `status.json` in the feed
+clone is thrown away), and local commits that are all feed-identity commits
+touching only `status.json` are dropped. Both are logged; anything else is
+still refused. Each git call times out after 60 s.
 
 Members: chrollo, elders, pakunoda, shalnark, kortopi, phinks, feitan, machi,
 nobunaga, franklin, shizuku, bonolenov, kalluto.

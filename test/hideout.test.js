@@ -494,6 +494,23 @@ test('retire of a stale codename that is still an active mission', () => {
   assert.match(r2.stderr, /mission is active; run mission done first/);
 });
 
+test('retire of an allowed codename does not write over a feed that fails check.js', () => {
+  const { bare, clones: [a, b] } = makeRemote(2);
+  for (const m of ['Silk Lantern', 'Blue Moth']) {
+    assert.equal(run(['mission', 'start', m], { repo: a }).code, 0);
+    assert.equal(run(['mission', 'done', m], { repo: a }).code, 0);
+  }
+  dropAllow(b, 'Silk Lantern\n'); // Blue Moth is now stale in the feed
+  const before = git(bare, 'rev-parse', BRANCH);
+  const r = run(['mission', 'retire', 'Silk Lantern'], { repo: a });
+  assert.equal(r.code, 1);
+  assert.match(r.stderr, /current status.json is invalid/);
+  assert.equal(git(bare, 'rev-parse', BRANCH), before, 'nothing pushed');
+  // Retiring the stale one first still works, then the allowed one.
+  assert.equal(run(['mission', 'retire', 'Blue Moth'], { repo: a }).code, 0);
+  assert.equal(run(['mission', 'retire', 'Silk Lantern'], { repo: a }).code, 0);
+});
+
 test('core.autocrlf=true in the clone does not break runs after a fast-forward', () => {
   const { bare, clones: [a, b] } = makeRemote(2);
   git(a, 'config', 'core.autocrlf', 'true');
@@ -537,4 +554,88 @@ test('caller GIT_AUTHOR/COMMITTER identity and non-UTC dates never reach the fee
   const meta = git(bare, 'log', '-1', '--format=%an <%ae> %ad|%cn <%ce> %cd', '--date=raw', BRANCH);
   assert.match(meta, /^hideout <hideout@noreply\.invalid> \d+ \+0000\|hideout <hideout@noreply\.invalid> \d+ \+0000$/);
   assert.doesNotMatch(meta, /1700000000/);
+});
+
+test('a run killed after its write (dirty status.json) does not brick the clone', () => {
+  const { bare, clones: [repo] } = makeRemote();
+  fs.writeFileSync(path.join(repo, 'status.json'), '{"half": "written"}\n');
+  const r = run(['start', 'feitan', '--verb', 'testing'], { repo });
+  assert.equal(r.code, 0, r.stderr);
+  assert.match(r.stderr, /restoring status.json left changed by an interrupted run/);
+  assert.equal(remoteFeed(bare).members.feitan.verb, 'testing');
+});
+
+test('a run killed after its commit (unpushed feed commit) does not brick the clone', () => {
+  const { bare, clones: [a, b] } = makeRemote(2);
+  // Leave a feed-identity commit in `a` that never reached origin, then move origin on.
+  fs.writeFileSync(path.join(a, 'status.json'),
+    run(['start', 'machi', '--verb', 'reading', '--dry-run'], { repo: a }).stdout);
+  execFileSync('git', ['-C', a, 'commit', '--quiet', '-am', 'hideout: machi start reading'], {
+    env: { ...process.env, GIT_AUTHOR_NAME: 'hideout', GIT_AUTHOR_EMAIL: 'hideout@noreply.invalid',
+      GIT_COMMITTER_NAME: 'hideout', GIT_COMMITTER_EMAIL: 'hideout@noreply.invalid' },
+  });
+  assert.equal(run(['start', 'phinks', '--verb', 'wiring'], { repo: b }).code, 0);
+  const r = run(['start', 'feitan', '--verb', 'testing'], { repo: a });
+  assert.equal(r.code, 0, r.stderr);
+  assert.match(r.stderr, /dropping an unpushed hideout commit/);
+  const feed = remoteFeed(bare);
+  assert.equal(feed.members.phinks.verb, 'wiring');
+  assert.equal(feed.members.feitan.verb, 'testing');
+  assert.equal(feed.members.machi.verb, undefined, 'the dropped commit was never pushed');
+});
+
+test('a stalled git call times out instead of hanging the session', () => {
+  const { clones: [repo] } = makeRemote();
+  const hang = path.join(repo, '..', 'hang.sh');
+  fs.writeFileSync(hang, '#!/bin/sh\nsleep 30\n', { mode: 0o755 });
+  git(repo, 'config', 'remote.origin.uploadpack', hang);
+  const t0 = Date.now();
+  const r = run(['start', 'feitan', '--verb', 'testing'], { repo, env: { HIDEOUT_GIT_TIMEOUT_MS: '1500' } });
+  assert.equal(r.code, 1);
+  assert.match(r.stderr, /git fetch failed: timed out/);
+  assert.ok(Date.now() - t0 < 15000, 'returned long before the stalled command would have');
+});
+
+test('a stalled push times out and says it may have reached the remote', () => {
+  const { bare, clones: [repo] } = makeRemote();
+  fs.writeFileSync(path.join(bare, 'hooks', 'pre-receive'), '#!/bin/sh\nsleep 30\n', { mode: 0o755 });
+  const r = run(['start', 'feitan', '--verb', 'testing'], { repo, env: { HIDEOUT_GIT_TIMEOUT_MS: '1500' } });
+  assert.equal(r.code, 1);
+  assert.equal(r.stderr, 'hideout: push timed out; it may have reached the remote, re-run to check\n');
+});
+
+test('interrupted-run recovery never drops a human commit or other changes', () => {
+  const FEED = { GIT_AUTHOR_NAME: 'hideout', GIT_AUTHOR_EMAIL: 'hideout@noreply.invalid',
+    GIT_COMMITTER_NAME: 'hideout', GIT_COMMITTER_EMAIL: 'hideout@noreply.invalid' };
+  const commit = (repo, env, files) => {
+    for (const [f, text] of Object.entries(files)) fs.writeFileSync(path.join(repo, f), text);
+    execFileSync('git', ['-C', repo, 'commit', '--quiet', '-am', 'x'], { env: { ...process.env, ...env } });
+  };
+  const feedText = (repo) => run(['start', 'machi', '--verb', 'reading', '--dry-run'], { repo }).stdout;
+  const cases = [
+    ['status.json by another author', (a) => commit(a, {}, { 'status.json': feedText(a) })],
+    ['feed identity touching another file', (a) => commit(a, FEED, { 'missions.allow': 'Silk Lantern\n' })],
+    ['feed commit then a human commit', (a) => {
+      commit(a, FEED, { 'status.json': feedText(a) });
+      commit(a, {}, { 'missions.allow': 'Silk Lantern\n' });
+    }],
+  ];
+  for (const [name, setup] of cases) {
+    const { clones: [a, b] } = makeRemote(2);
+    setup(a);
+    assert.equal(run(['start', 'phinks', '--verb', 'wiring'], { repo: b }).code, 0);
+    const head = git(a, 'rev-parse', 'HEAD');
+    const r = run(['start', 'feitan', '--verb', 'testing'], { repo: a });
+    assert.equal(r.code, 1, name);
+    assert.match(r.stderr, /has commits not on origin; refusing/, name);
+    assert.equal(git(a, 'rev-parse', 'HEAD'), head, name);
+  }
+  // A dirty status.json together with another dirty file is refused too.
+  const { clones: [c] } = makeRemote();
+  fs.writeFileSync(path.join(c, 'status.json'), '{}\n');
+  fs.writeFileSync(path.join(c, 'missions.allow'), 'Silk Lantern\n');
+  const r = run(['start', 'feitan', '--verb', 'testing'], { repo: c });
+  assert.equal(r.code, 1);
+  assert.match(r.stderr, /uncommitted changes; refusing/);
+  assert.equal(fs.readFileSync(path.join(c, 'status.json'), 'utf8'), '{}\n');
 });
