@@ -1,0 +1,60 @@
+{
+  "version": 1,
+  "updatedAt": "2026-11-08T10:36:35.075Z",
+  "missions": [],
+  "members": {
+    "chrollo": {
+      "state": "idle",
+      "since": "2026-11-08T10:36:35.075Z"
+    },
+    "elders": {
+      "state": "idle",
+      "since": "2026-11-08T10:36:35.075Z"
+    },
+    "pakunoda": {
+      "state": "idle",
+      "since": "2026-11-08T10:36:35.075Z"
+    },
+    "shalnark": {
+      "state": "idle",
+      "since": "2026-11-08T10:36:35.075Z"
+    },
+    "kortopi": {
+      "state": "idle",
+      "since": "2026-11-08T10:36:35.075Z"
+    },
+    "phinks": {
+      "state": "idle",
+      "since": "2026-11-08T10:36:35.075Z"
+    },
+    "feitan": {
+      "state": "idle",
+      "since": "2026-11-08T10:36:35.075Z"
+    },
+    "machi": {
+      "state": "idle",
+      "since": "2026-11-08T10:36:35.075Z"
+    },
+    "nobunaga": {
+      "state": "idle",
+      "since": "2026-11-08T10:36:35.075Z"
+    },
+    "franklin": {
+      "state": "idle",
+      "since": "2026-11-08T10:36:35.075Z"
+    },
+    "shizuku": {
+      "state": "idle",
+      "since": "2026-11-08T10:36:35.075Z"
+    },
+    "bonolenov": {
+      "state": "idle",
+      "since": "2026-11-08T10:36:35.075Z"
+    },
+    "kalluto": {
+      "state": "idle",
+      "since": "2026-11-08T10:36:35.075Z"
+    }
+  },
+  "events": []
+}

@@ -1,0 +1,10 @@
+{
+  "members": ["chrollo", "elders", "pakunoda", "shalnark", "kortopi", "phinks", "feitan", "machi", "nobunaga", "franklin", "shizuku", "bonolenov", "kalluto"],
+  "verbs": [
+    "advising", "analyzing", "auditing", "briefing", "building", "cleaning", "crafting",
+    "debating", "debugging", "deploying", "designing", "documenting", "drumming", "fixing",
+    "folding", "forging", "guarding", "interrogating", "planning", "questioning", "reading",
+    "refactoring", "researching", "reviewing", "scheduling", "sketching", "stitching",
+    "testing", "tracking", "wiring"
+  ]
+}
