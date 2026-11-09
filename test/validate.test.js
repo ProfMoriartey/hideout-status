@@ -251,6 +251,17 @@ test('ticket: shape, allowlisted title, working members only', () => {
     assert.notDeepEqual(doc('working', t), [], JSON.stringify(t));
   }
   assert.notDeepEqual(doc('done', { n: 3, title: 'setup' }), []);
+  const ev = (kind, ticket) => {
+    const d = freshFeed();
+    d.events = [{ at: d.updatedAt, who: 'kortopi', kind, verb: 'building', ticket }];
+    return V.validateStatus(d, lists);
+  };
+  assert.deepEqual(ev('start', { n: 3, title: 'structure' }), []);
+  assert.deepEqual(ev('progress', { n: 3, title: 'structure' }), []);
+  assert.notDeepEqual(ev('done', { n: 3, title: 'structure' }), [], 'not on done');
+  for (const t of [{ n: 0, title: 'setup' }, { n: 3, title: 'hunter2' }, { n: 3, title: 'setup', x: 1 }, 'setup', null]) {
+    assert.notDeepEqual(ev('start', t), [], JSON.stringify(t));
+  }
   assert.deepEqual(V.parseTicket('3:setup'), { n: 3, title: 'setup' });
   assert.equal(V.parseTicket('0:setup'), null);
 });

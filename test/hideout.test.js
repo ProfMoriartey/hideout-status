@@ -95,8 +95,13 @@ test('ticket: set on start/progress, kept, cleared on done; bad values refused',
   assert.deepEqual(readFeed(repo).members.kortopi.ticket, { n: 3, title: 'structure' }, 'kept');
   assert.equal(run(['progress', 'kortopi', '--ticket', '4:characters'], { repo }).code, 0);
   assert.deepEqual(readFeed(repo).members.kortopi.ticket, { n: 4, title: 'characters' });
+  const ev = readFeed(repo).events;
+  assert.deepEqual(ev[0].ticket, { n: 4, title: 'characters' }, 'ticket change is an event');
+  assert.deepEqual(ev[1].ticket, { n: 3, title: 'structure' }, 'start event carries the ticket');
+  assert.equal(ev.length, 2, 'progress tick without a change adds no event');
   assert.equal(run(['done', 'kortopi'], { repo }).code, 0);
   assert.equal(readFeed(repo).members.kortopi.ticket, undefined, 'cleared on done');
+  assert.equal(readFeed(repo).events[0].ticket, undefined, 'done event has no ticket');
   for (const bad of ['0:setup', '1000:setup', '3:Setup', '3:hunter2', '3', ':setup', '3:notaword']) {
     assert.notEqual(run(['start', 'kortopi', '--verb', 'building', '--ticket', bad], { repo }).code, 0, bad);
   }

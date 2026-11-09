@@ -40,6 +40,9 @@ hideout idle <member>        # back to idle, no event
 `--ticket 3:structure` shows which ticket a working member is on: a number
 1..999 and a title from the `titles` list in `schema/allowlist.json` (never free
 text). `progress` keeps it unless given a new one; `done` and `idle` clear it.
+The `start` event carries the ticket, and a `progress` that changes the ticket
+adds an event with the new one (same `{n, title}` rules; never on `done`), so
+the site can say "Kortopi started building ticket 3 · structure".
 
 Missions (events are recorded as `chrollo`):
 
