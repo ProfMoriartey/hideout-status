@@ -20,7 +20,8 @@ Needs Node 18 or newer and git. No npm packages.
 
 ```sh
 hideout start <member> --verb <verb> [--mission <codename>] [--progress N/M]
-hideout progress <member> [--verb <verb>] [--progress N/M]
+                       [--ticket N:title]
+hideout progress <member> [--verb <verb>] [--progress N/M] [--ticket N:title]
 hideout done <member>        # the site celebrates, then shows the member idle
 hideout idle <member>        # back to idle, no event
 ```
@@ -35,6 +36,10 @@ hideout idle <member>        # back to idle, no event
   nothing and exit 0.
 - `since` is when the current state began and moves only when the state
   changes. Every member write sets the member's `updatedAt`.
+
+`--ticket 3:structure` shows which ticket a working member is on: a number
+1..999 and a title from the `titles` list in `schema/allowlist.json` (never free
+text). `progress` keeps it unless given a new one; `done` and `idle` clear it.
 
 Missions (events are recorded as `chrollo`):
 
@@ -131,8 +136,8 @@ branches as usual.
 
 ## Privacy rules
 
-- Only member ids, verbs from the list, allowlisted mission codenames, small
-  counts (`N/M`, `0 <= N <= M <= 999`) and timestamps can reach the feed.
+- Only member ids, verbs and ticket titles from the lists, allowlisted mission codenames, small
+  counts (`N/M`, `0 <= N <= M <= 999`), ticket numbers and timestamps can reach the feed.
 - No free text: no notes, titles, file names, repo names or client names.
   Unknown flags, extra arguments and extra JSON fields are rejected.
 - The tool validates every write; CI validates every push and pull request.

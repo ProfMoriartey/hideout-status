@@ -88,6 +88,16 @@
           },
           "progress": {
             "$ref": "#/$defs/count"
+          },
+          "ticket": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["n", "title"],
+            "description": "Working members only. Shown as 'ticket 3 \u00b7 structure'. title is a word from schema/allowlist.json titles.",
+            "properties": {
+              "n": { "type": "integer", "minimum": 1, "maximum": 999 },
+              "title": { "type": "string", "pattern": "^[a-z]{3,20}$" }
+            }
           }
         }
       }
