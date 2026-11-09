@@ -1,13 +1,13 @@
 {
   "version": 1,
-  "updatedAt": "2026-11-09T14:42:40.353Z",
+  "updatedAt": "2026-11-09T14:42:42.456Z",
   "missions": [
     {
       "codename": "Set Table",
       "state": "active",
       "startedAt": "2026-11-09T14:01:20.784Z",
       "tickets": {
-        "done": 0,
+        "done": 1,
         "total": 8
       }
     }
@@ -78,6 +78,12 @@
     }
   },
   "events": [
+    {
+      "at": "2026-11-09T14:42:42.456Z",
+      "who": "chrollo",
+      "kind": "mission-progress",
+      "mission": "Set Table"
+    },
     {
       "at": "2026-11-09T14:42:40.353Z",
       "who": "feitan",
