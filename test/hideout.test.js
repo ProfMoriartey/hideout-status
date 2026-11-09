@@ -52,7 +52,7 @@ const PRIVACY_CASES = [
   [['mission', 'launch', 'Silk Lantern'], 'unknown command'],
   [['mission', 'progress', 'Silk Lantern'], 'mission progress needs --tickets'],
   [['mission', 'retire', 'acme merger'], 'invalid mission codename'],
-  [['progress', 'feitan'], 'progress needs --verb and/or --progress'],
+  [['progress', 'feitan'], 'progress needs --verb, --progress and/or --ticket'],
   [['start', 'feitan', '--verb', 'testing', '--repo='], '--repo needs a path'],
 ];
 
@@ -83,6 +83,23 @@ test('--dry-run prints the new JSON and commits nothing', () => {
   assert.deepEqual(Object.keys(doc.events[0]).sort(), ['at', 'kind', 'mission', 'verb', 'who']);
   assert.equal(git(bare, 'rev-parse', BRANCH), before);
   assert.equal(git(repo, 'status', '--porcelain'), '');
+});
+
+test('ticket: set on start/progress, kept, cleared on done; bad values refused', () => {
+  const { clones: [repo] } = makeRemote();
+  const readFeed = (r) => JSON.parse(fs.readFileSync(path.join(r, 'status.json'), 'utf8'));
+  let r = run(['start', 'kortopi', '--verb', 'building', '--ticket', '3:structure'], { repo });
+  assert.equal(r.code, 0, r.stderr);
+  assert.deepEqual(readFeed(repo).members.kortopi.ticket, { n: 3, title: 'structure' });
+  assert.equal(run(['progress', 'kortopi', '--progress', '1/2'], { repo }).code, 0);
+  assert.deepEqual(readFeed(repo).members.kortopi.ticket, { n: 3, title: 'structure' }, 'kept');
+  assert.equal(run(['progress', 'kortopi', '--ticket', '4:characters'], { repo }).code, 0);
+  assert.deepEqual(readFeed(repo).members.kortopi.ticket, { n: 4, title: 'characters' });
+  assert.equal(run(['done', 'kortopi'], { repo }).code, 0);
+  assert.equal(readFeed(repo).members.kortopi.ticket, undefined, 'cleared on done');
+  for (const bad of ['0:setup', '1000:setup', '3:Setup', '3:hunter2', '3', ':setup', '3:notaword']) {
+    assert.notEqual(run(['start', 'kortopi', '--verb', 'building', '--ticket', bad], { repo }).code, 0, bad);
+  }
 });
 
 test('start -> progress -> done -> idle: since, updatedAt and events', async () => {

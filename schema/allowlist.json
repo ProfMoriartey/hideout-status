@@ -6,5 +6,16 @@
     "folding", "forging", "guarding", "interrogating", "planning", "questioning", "reading",
     "refactoring", "researching", "reviewing", "scheduling", "sketching", "stitching",
     "testing", "tracking", "wiring"
+  ],
+  "titles": [
+    "setup", "scaffold", "structure", "design", "layout", "interface", "pages",
+    "components", "styling", "data", "database", "api", "backend", "auth", "accounts",
+    "payments", "cart", "search", "feed", "sync", "integration", "notifications",
+    "messaging", "content", "media", "characters", "animation", "labels", "sound",
+    "performance", "mobile", "accessibility", "localization", "security", "privacy",
+    "tests", "review", "fixes", "refactor", "cleanup", "docs", "deploy", "infrastructure",
+    "monitoring", "analytics", "migration", "import", "export", "reports", "admin",
+    "settings", "onboarding", "polish", "release", "research", "planning", "spec", "bot",
+    "model", "prompts", "pipeline"
   ]
 }

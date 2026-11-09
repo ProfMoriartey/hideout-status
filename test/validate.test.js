@@ -11,6 +11,7 @@ const { ROOT, tmpdir, freshFeed, writeContract } = require('./helpers');
 const lists = {
   members: [...V.MEMBER_IDS],
   verbs: ['interrogating', 'testing', 'building'],
+  titles: ['setup', 'structure'],
   missions: ['Silk Lantern'],
 };
 
@@ -27,7 +28,7 @@ test('validate.js constants match status.schema.json', () => {
   assert.deepEqual([...V.EVENT_KINDS], schema.properties.events.items.properties.kind.enum);
   const memberProps = schema.properties.members.additionalProperties.properties;
   assert.deepEqual([...V.MEMBER_STATES], memberProps.state.enum);
-  assert.deepEqual(Object.keys(memberProps).sort(), ['mission', 'progress', 'since', 'state', 'updatedAt', 'verb']);
+  assert.deepEqual(Object.keys(memberProps).sort(), ['mission', 'progress', 'since', 'state', 'ticket', 'updatedAt', 'verb']);
   const allow = JSON.parse(fs.readFileSync(path.join(ROOT, 'schema', 'allowlist.json'), 'utf8'));
   assert.deepEqual(allow.members, d.memberId.enum);
 });
@@ -122,8 +123,8 @@ test('timestamps must be real calendar dates', () => {
 });
 
 test('duplicates are rejected: allowlist entries and mission codenames in the feed', () => {
-  assert.notDeepEqual(V.checkAllowlist({ members: ['feitan', 'feitan'], verbs: ['testing'] }), []);
-  assert.notDeepEqual(V.checkAllowlist({ members: ['feitan'], verbs: ['testing', 'testing'] }), []);
+  assert.notDeepEqual(V.checkAllowlist({ members: ['feitan', 'feitan'], verbs: ['testing'], titles: ['setup'] }), []);
+  assert.notDeepEqual(V.checkAllowlist({ members: ['feitan'], verbs: ['testing', 'testing'], titles: ['setup'] }), []);
   const d = freshFeed();
   const m = { codename: 'Silk Lantern', state: 'done', startedAt: d.updatedAt };
   d.missions = [m, { ...m }];
@@ -236,4 +237,20 @@ test('push classification only trusts git ref status lines', () => {
   assert.equal(H.classifyPush('remote: failed to update ref: policy\n ! [remote rejected] main -> main (pre-receive hook declined)'), 'fatal');
   assert.equal(H.classifyPush('remote:  ! [rejected] main -> main (fetch first)\n ! [remote rejected] main -> main (pre-receive hook declined)'), 'fatal');
   assert.equal(H.classifyPush('fetch first'), 'fatal');
+});
+
+test('ticket: shape, allowlisted title, working members only', () => {
+  const doc = (state, ticket) => {
+    const d = freshFeed();
+    d.members.kortopi = { state, since: d.updatedAt, ticket };
+    return V.validateStatus(d, lists);
+  };
+  assert.deepEqual(doc('working', { n: 3, title: 'structure' }), []);
+  for (const t of [{ n: 0, title: 'setup' }, { n: 1000, title: 'setup' }, { n: 1.5, title: 'setup' },
+    { n: 3, title: 'hunter2' }, { n: 3, title: 'setup', x: 1 }, { n: 3 }, 'setup', null]) {
+    assert.notDeepEqual(doc('working', t), [], JSON.stringify(t));
+  }
+  assert.notDeepEqual(doc('done', { n: 3, title: 'setup' }), []);
+  assert.deepEqual(V.parseTicket('3:setup'), { n: 3, title: 'setup' });
+  assert.equal(V.parseTicket('0:setup'), null);
 });
