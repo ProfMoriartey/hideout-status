@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updatedAt": "2026-11-09T07:56:20.909Z",
+  "updatedAt": "2026-11-09T07:56:23.485Z",
   "missions": [],
   "members": {
     "chrollo": {
@@ -32,14 +32,10 @@
       "since": "2026-11-08T10:36:35.075Z"
     },
     "feitan": {
-      "state": "working",
-      "since": "2026-11-09T07:56:15.765Z",
-      "updatedAt": "2026-11-09T07:56:20.909Z",
-      "verb": "testing",
-      "ticket": {
-        "n": 4,
-        "title": "fixes"
-      }
+      "state": "done",
+      "since": "2026-11-09T07:56:23.485Z",
+      "updatedAt": "2026-11-09T07:56:23.485Z",
+      "verb": "testing"
     },
     "machi": {
       "state": "working",
@@ -73,6 +69,12 @@
     }
   },
   "events": [
+    {
+      "at": "2026-11-09T07:56:23.485Z",
+      "who": "feitan",
+      "kind": "done",
+      "verb": "testing"
+    },
     {
       "at": "2026-11-09T07:56:20.909Z",
       "who": "feitan",
