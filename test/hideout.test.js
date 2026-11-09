@@ -494,6 +494,23 @@ test('retire of a stale codename that is still an active mission', () => {
   assert.match(r2.stderr, /mission is active; run mission done first/);
 });
 
+test('retire of an allowed codename does not write over a feed that fails check.js', () => {
+  const { bare, clones: [a, b] } = makeRemote(2);
+  for (const m of ['Silk Lantern', 'Blue Moth']) {
+    assert.equal(run(['mission', 'start', m], { repo: a }).code, 0);
+    assert.equal(run(['mission', 'done', m], { repo: a }).code, 0);
+  }
+  dropAllow(b, 'Silk Lantern\n'); // Blue Moth is now stale in the feed
+  const before = git(bare, 'rev-parse', BRANCH);
+  const r = run(['mission', 'retire', 'Silk Lantern'], { repo: a });
+  assert.equal(r.code, 1);
+  assert.match(r.stderr, /current status.json is invalid/);
+  assert.equal(git(bare, 'rev-parse', BRANCH), before, 'nothing pushed');
+  // Retiring the stale one first still works, then the allowed one.
+  assert.equal(run(['mission', 'retire', 'Blue Moth'], { repo: a }).code, 0);
+  assert.equal(run(['mission', 'retire', 'Silk Lantern'], { repo: a }).code, 0);
+});
+
 test('core.autocrlf=true in the clone does not break runs after a fast-forward', () => {
   const { bare, clones: [a, b] } = makeRemote(2);
   git(a, 'config', 'core.autocrlf', 'true');
