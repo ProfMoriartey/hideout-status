@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updatedAt": "2026-11-09T14:26:57.243Z",
+  "updatedAt": "2026-11-09T14:42:38.003Z",
   "missions": [
     {
       "codename": "Set Table",
@@ -32,15 +32,11 @@
       "since": "2026-11-08T10:36:35.075Z"
     },
     "kortopi": {
-      "state": "working",
-      "since": "2026-11-09T14:05:24.229Z",
-      "updatedAt": "2026-11-09T14:05:24.229Z",
+      "state": "done",
+      "since": "2026-11-09T14:42:38.003Z",
+      "updatedAt": "2026-11-09T14:42:38.003Z",
       "verb": "building",
-      "mission": "Set Table",
-      "ticket": {
-        "n": 1,
-        "title": "design"
-      }
+      "mission": "Set Table"
     },
     "phinks": {
       "state": "idle",
@@ -86,6 +82,13 @@
     }
   },
   "events": [
+    {
+      "at": "2026-11-09T14:42:38.003Z",
+      "who": "kortopi",
+      "kind": "done",
+      "verb": "building",
+      "mission": "Set Table"
+    },
     {
       "at": "2026-11-09T14:26:57.243Z",
       "who": "machi",
