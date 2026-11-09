@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updatedAt": "2026-11-09T14:42:38.003Z",
+  "updatedAt": "2026-11-09T14:42:40.353Z",
   "missions": [
     {
       "codename": "Set Table",
@@ -43,15 +43,11 @@
       "since": "2026-11-08T10:36:35.075Z"
     },
     "feitan": {
-      "state": "working",
-      "since": "2026-11-09T14:21:04.268Z",
-      "updatedAt": "2026-11-09T14:21:04.268Z",
+      "state": "done",
+      "since": "2026-11-09T14:42:40.353Z",
+      "updatedAt": "2026-11-09T14:42:40.353Z",
       "verb": "testing",
-      "mission": "Set Table",
-      "ticket": {
-        "n": 1,
-        "title": "design"
-      }
+      "mission": "Set Table"
     },
     "machi": {
       "state": "done",
@@ -82,6 +78,13 @@
     }
   },
   "events": [
+    {
+      "at": "2026-11-09T14:42:40.353Z",
+      "who": "feitan",
+      "kind": "done",
+      "verb": "testing",
+      "mission": "Set Table"
+    },
     {
       "at": "2026-11-09T14:42:38.003Z",
       "who": "kortopi",
