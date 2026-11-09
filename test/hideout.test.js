@@ -595,3 +595,47 @@ test('a stalled git call times out instead of hanging the session', () => {
   assert.match(r.stderr, /git fetch failed: timed out/);
   assert.ok(Date.now() - t0 < 15000, 'returned long before the stalled command would have');
 });
+
+test('a stalled push times out and says it may have reached the remote', () => {
+  const { bare, clones: [repo] } = makeRemote();
+  fs.writeFileSync(path.join(bare, 'hooks', 'pre-receive'), '#!/bin/sh\nsleep 30\n', { mode: 0o755 });
+  const r = run(['start', 'feitan', '--verb', 'testing'], { repo, env: { HIDEOUT_GIT_TIMEOUT_MS: '1500' } });
+  assert.equal(r.code, 1);
+  assert.equal(r.stderr, 'hideout: push timed out; it may have reached the remote, re-run to check\n');
+});
+
+test('interrupted-run recovery never drops a human commit or other changes', () => {
+  const FEED = { GIT_AUTHOR_NAME: 'hideout', GIT_AUTHOR_EMAIL: 'hideout@noreply.invalid',
+    GIT_COMMITTER_NAME: 'hideout', GIT_COMMITTER_EMAIL: 'hideout@noreply.invalid' };
+  const commit = (repo, env, files) => {
+    for (const [f, text] of Object.entries(files)) fs.writeFileSync(path.join(repo, f), text);
+    execFileSync('git', ['-C', repo, 'commit', '--quiet', '-am', 'x'], { env: { ...process.env, ...env } });
+  };
+  const feedText = (repo) => run(['start', 'machi', '--verb', 'reading', '--dry-run'], { repo }).stdout;
+  const cases = [
+    ['status.json by another author', (a) => commit(a, {}, { 'status.json': feedText(a) })],
+    ['feed identity touching another file', (a) => commit(a, FEED, { 'missions.allow': 'Silk Lantern\n' })],
+    ['feed commit then a human commit', (a) => {
+      commit(a, FEED, { 'status.json': feedText(a) });
+      commit(a, {}, { 'missions.allow': 'Silk Lantern\n' });
+    }],
+  ];
+  for (const [name, setup] of cases) {
+    const { clones: [a, b] } = makeRemote(2);
+    setup(a);
+    assert.equal(run(['start', 'phinks', '--verb', 'wiring'], { repo: b }).code, 0);
+    const head = git(a, 'rev-parse', 'HEAD');
+    const r = run(['start', 'feitan', '--verb', 'testing'], { repo: a });
+    assert.equal(r.code, 1, name);
+    assert.match(r.stderr, /has commits not on origin; refusing/, name);
+    assert.equal(git(a, 'rev-parse', 'HEAD'), head, name);
+  }
+  // A dirty status.json together with another dirty file is refused too.
+  const { clones: [c] } = makeRemote();
+  fs.writeFileSync(path.join(c, 'status.json'), '{}\n');
+  fs.writeFileSync(path.join(c, 'missions.allow'), 'Silk Lantern\n');
+  const r = run(['start', 'feitan', '--verb', 'testing'], { repo: c });
+  assert.equal(r.code, 1);
+  assert.match(r.stderr, /uncommitted changes; refusing/);
+  assert.equal(fs.readFileSync(path.join(c, 'status.json'), 'utf8'), '{}\n');
+});
