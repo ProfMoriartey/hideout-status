@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updatedAt": "2026-11-13T19:00:34.801Z",
+  "updatedAt": "2026-11-13T19:18:11.045Z",
   "missions": [
     {
       "codename": "Set Table",
@@ -32,9 +32,9 @@
       "since": "2026-11-08T10:36:35.075Z"
     },
     "kortopi": {
-      "state": "working",
-      "since": "2026-11-13T19:00:32.382Z",
-      "updatedAt": "2026-11-13T19:00:32.382Z",
+      "state": "done",
+      "since": "2026-11-13T19:18:11.045Z",
+      "updatedAt": "2026-11-13T19:18:11.045Z",
       "verb": "building",
       "mission": "Set Table"
     },
@@ -78,6 +78,13 @@
     }
   },
   "events": [
+    {
+      "at": "2026-11-13T19:18:11.045Z",
+      "who": "kortopi",
+      "kind": "done",
+      "verb": "building",
+      "mission": "Set Table"
+    },
     {
       "at": "2026-11-13T19:00:34.801Z",
       "who": "chrollo",
@@ -230,12 +237,6 @@
       "at": "2026-11-09T06:10:40.229Z",
       "who": "chrollo",
       "kind": "done",
-      "verb": "planning"
-    },
-    {
-      "at": "2026-11-09T05:46:00.294Z",
-      "who": "chrollo",
-      "kind": "start",
       "verb": "planning"
     }
   ]
