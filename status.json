@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updatedAt": "2026-11-13T19:21:58.043Z",
+  "updatedAt": "2026-11-13T19:35:13.612Z",
   "missions": [
     {
       "codename": "Set Table",
@@ -32,18 +32,14 @@
       "since": "2026-11-08T10:36:35.075Z"
     },
     "kortopi": {
-      "state": "working",
-      "since": "2026-11-13T19:21:58.043Z",
-      "updatedAt": "2026-11-13T19:21:58.043Z",
+      "state": "done",
+      "since": "2026-11-13T19:35:13.612Z",
+      "updatedAt": "2026-11-13T19:35:13.612Z",
       "verb": "building",
       "mission": "Set Table",
       "progress": {
         "done": 2,
         "total": 9
-      },
-      "ticket": {
-        "n": 2,
-        "title": "design"
       }
     },
     "phinks": {
@@ -86,6 +82,13 @@
     }
   },
   "events": [
+    {
+      "at": "2026-11-13T19:35:13.612Z",
+      "who": "kortopi",
+      "kind": "done",
+      "verb": "building",
+      "mission": "Set Table"
+    },
     {
       "at": "2026-11-13T19:21:58.043Z",
       "who": "kortopi",
@@ -241,12 +244,6 @@
         "n": 3,
         "title": "tests"
       }
-    },
-    {
-      "at": "2026-11-09T07:17:14.165Z",
-      "who": "kortopi",
-      "kind": "done",
-      "verb": "testing"
     }
   ]
 }
