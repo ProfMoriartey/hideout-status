@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updatedAt": "2026-11-13T19:53:43.584Z",
+  "updatedAt": "2026-11-13T19:53:45.604Z",
   "missions": [
     {
       "codename": "Set Table",
@@ -32,14 +32,18 @@
       "since": "2026-11-08T10:36:35.075Z"
     },
     "kortopi": {
-      "state": "done",
-      "since": "2026-11-13T19:53:41.447Z",
-      "updatedAt": "2026-11-13T19:53:41.447Z",
+      "state": "working",
+      "since": "2026-11-13T19:53:45.604Z",
+      "updatedAt": "2026-11-13T19:53:45.604Z",
       "verb": "building",
       "mission": "Set Table",
       "progress": {
-        "done": 3,
+        "done": 4,
         "total": 9
+      },
+      "ticket": {
+        "n": 6,
+        "title": "pages"
       }
     },
     "phinks": {
@@ -82,6 +86,17 @@
     }
   },
   "events": [
+    {
+      "at": "2026-11-13T19:53:45.604Z",
+      "who": "kortopi",
+      "kind": "start",
+      "verb": "building",
+      "mission": "Set Table",
+      "ticket": {
+        "n": 6,
+        "title": "pages"
+      }
+    },
     {
       "at": "2026-11-13T19:53:43.584Z",
       "who": "chrollo",
@@ -232,12 +247,6 @@
       "who": "chrollo",
       "kind": "mission-start",
       "mission": "Set Table"
-    },
-    {
-      "at": "2026-11-09T07:56:25.547Z",
-      "who": "machi",
-      "kind": "done",
-      "verb": "reviewing"
     }
   ]
 }
