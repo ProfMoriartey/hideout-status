@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updatedAt": "2026-11-13T19:00:29.910Z",
+  "updatedAt": "2026-11-13T19:00:32.382Z",
   "missions": [
     {
       "codename": "Set Table",
@@ -32,9 +32,11 @@
       "since": "2026-11-08T10:36:35.075Z"
     },
     "kortopi": {
-      "state": "idle",
-      "since": "2026-11-13T19:00:29.910Z",
-      "updatedAt": "2026-11-13T19:00:29.910Z"
+      "state": "working",
+      "since": "2026-11-13T19:00:32.382Z",
+      "updatedAt": "2026-11-13T19:00:32.382Z",
+      "verb": "building",
+      "mission": "Set Table"
     },
     "phinks": {
       "state": "idle",
@@ -76,6 +78,13 @@
     }
   },
   "events": [
+    {
+      "at": "2026-11-13T19:00:32.382Z",
+      "who": "kortopi",
+      "kind": "start",
+      "verb": "building",
+      "mission": "Set Table"
+    },
     {
       "at": "2026-11-09T14:45:08.960Z",
       "who": "kortopi",
