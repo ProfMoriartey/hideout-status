@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updatedAt": "2026-11-13T19:35:17.894Z",
+  "updatedAt": "2026-11-13T19:53:41.447Z",
   "missions": [
     {
       "codename": "Set Table",
@@ -32,18 +32,14 @@
       "since": "2026-11-08T10:36:35.075Z"
     },
     "kortopi": {
-      "state": "working",
-      "since": "2026-11-13T19:35:17.894Z",
-      "updatedAt": "2026-11-13T19:35:17.894Z",
+      "state": "done",
+      "since": "2026-11-13T19:53:41.447Z",
+      "updatedAt": "2026-11-13T19:53:41.447Z",
       "verb": "building",
       "mission": "Set Table",
       "progress": {
         "done": 3,
         "total": 9
-      },
-      "ticket": {
-        "n": 3,
-        "title": "pages"
       }
     },
     "phinks": {
@@ -86,6 +82,13 @@
     }
   },
   "events": [
+    {
+      "at": "2026-11-13T19:53:41.447Z",
+      "who": "kortopi",
+      "kind": "done",
+      "verb": "building",
+      "mission": "Set Table"
+    },
     {
       "at": "2026-11-13T19:35:17.894Z",
       "who": "kortopi",
@@ -235,16 +238,6 @@
       "who": "feitan",
       "kind": "done",
       "verb": "testing"
-    },
-    {
-      "at": "2026-11-09T07:56:20.909Z",
-      "who": "feitan",
-      "kind": "progress",
-      "verb": "testing",
-      "ticket": {
-        "n": 4,
-        "title": "fixes"
-      }
     }
   ]
 }
