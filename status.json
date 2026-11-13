@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updatedAt": "2026-11-13T19:35:15.785Z",
+  "updatedAt": "2026-11-13T19:35:17.894Z",
   "missions": [
     {
       "codename": "Set Table",
@@ -32,14 +32,18 @@
       "since": "2026-11-08T10:36:35.075Z"
     },
     "kortopi": {
-      "state": "done",
-      "since": "2026-11-13T19:35:13.612Z",
-      "updatedAt": "2026-11-13T19:35:13.612Z",
+      "state": "working",
+      "since": "2026-11-13T19:35:17.894Z",
+      "updatedAt": "2026-11-13T19:35:17.894Z",
       "verb": "building",
       "mission": "Set Table",
       "progress": {
-        "done": 2,
+        "done": 3,
         "total": 9
+      },
+      "ticket": {
+        "n": 3,
+        "title": "pages"
       }
     },
     "phinks": {
@@ -82,6 +86,17 @@
     }
   },
   "events": [
+    {
+      "at": "2026-11-13T19:35:17.894Z",
+      "who": "kortopi",
+      "kind": "start",
+      "verb": "building",
+      "mission": "Set Table",
+      "ticket": {
+        "n": 3,
+        "title": "pages"
+      }
+    },
     {
       "at": "2026-11-13T19:35:15.785Z",
       "who": "chrollo",
@@ -229,16 +244,6 @@
       "ticket": {
         "n": 4,
         "title": "fixes"
-      }
-    },
-    {
-      "at": "2026-11-09T07:56:18.431Z",
-      "who": "machi",
-      "kind": "start",
-      "verb": "reviewing",
-      "ticket": {
-        "n": 3,
-        "title": "review"
       }
     }
   ]
