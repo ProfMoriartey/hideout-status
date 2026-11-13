@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updatedAt": "2026-11-09T14:45:08.960Z",
+  "updatedAt": "2026-11-13T19:00:29.910Z",
   "missions": [
     {
       "codename": "Set Table",
@@ -32,19 +32,9 @@
       "since": "2026-11-08T10:36:35.075Z"
     },
     "kortopi": {
-      "state": "working",
-      "since": "2026-11-09T14:45:08.960Z",
-      "updatedAt": "2026-11-09T14:45:08.960Z",
-      "verb": "building",
-      "mission": "Set Table",
-      "progress": {
-        "done": 1,
-        "total": 8
-      },
-      "ticket": {
-        "n": 2,
-        "title": "pages"
-      }
+      "state": "idle",
+      "since": "2026-11-13T19:00:29.910Z",
+      "updatedAt": "2026-11-13T19:00:29.910Z"
     },
     "phinks": {
       "state": "idle",
