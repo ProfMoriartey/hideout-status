@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updatedAt": "2026-11-14T07:42:11.713Z",
+  "updatedAt": "2026-11-14T07:42:16.455Z",
   "missions": [
     {
       "codename": "Set Table",
@@ -81,8 +81,19 @@
       }
     },
     "nobunaga": {
-      "state": "idle",
-      "since": "2026-11-08T10:36:35.075Z"
+      "state": "working",
+      "since": "2026-11-14T07:42:16.455Z",
+      "updatedAt": "2026-11-14T07:42:16.455Z",
+      "verb": "guarding",
+      "mission": "Set Table",
+      "progress": {
+        "done": 8,
+        "total": 9
+      },
+      "ticket": {
+        "n": 8,
+        "title": "security"
+      }
     },
     "franklin": {
       "state": "idle",
@@ -102,6 +113,17 @@
     }
   },
   "events": [
+    {
+      "at": "2026-11-14T07:42:16.455Z",
+      "who": "nobunaga",
+      "kind": "start",
+      "verb": "guarding",
+      "mission": "Set Table",
+      "ticket": {
+        "n": 8,
+        "title": "security"
+      }
+    },
     {
       "at": "2026-11-14T07:42:11.713Z",
       "who": "machi",
@@ -259,13 +281,6 @@
       "at": "2026-11-13T19:35:15.785Z",
       "who": "chrollo",
       "kind": "mission-progress",
-      "mission": "Set Table"
-    },
-    {
-      "at": "2026-11-13T19:35:13.612Z",
-      "who": "kortopi",
-      "kind": "done",
-      "verb": "building",
       "mission": "Set Table"
     }
   ]
