@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updatedAt": "2026-11-14T07:42:07.970Z",
+  "updatedAt": "2026-11-14T07:42:11.713Z",
   "missions": [
     {
       "codename": "Set Table",
@@ -66,11 +66,19 @@
       }
     },
     "machi": {
-      "state": "done",
-      "since": "2026-11-09T14:26:57.243Z",
-      "updatedAt": "2026-11-09T14:26:57.243Z",
+      "state": "working",
+      "since": "2026-11-14T07:42:11.713Z",
+      "updatedAt": "2026-11-14T07:42:11.713Z",
       "verb": "reviewing",
-      "mission": "Set Table"
+      "mission": "Set Table",
+      "progress": {
+        "done": 8,
+        "total": 9
+      },
+      "ticket": {
+        "n": 8,
+        "title": "polish"
+      }
     },
     "nobunaga": {
       "state": "idle",
@@ -94,6 +102,17 @@
     }
   },
   "events": [
+    {
+      "at": "2026-11-14T07:42:11.713Z",
+      "who": "machi",
+      "kind": "start",
+      "verb": "reviewing",
+      "mission": "Set Table",
+      "ticket": {
+        "n": 8,
+        "title": "polish"
+      }
+    },
     {
       "at": "2026-11-14T07:42:07.970Z",
       "who": "feitan",
@@ -248,17 +267,6 @@
       "kind": "done",
       "verb": "building",
       "mission": "Set Table"
-    },
-    {
-      "at": "2026-11-13T19:21:58.043Z",
-      "who": "kortopi",
-      "kind": "start",
-      "verb": "building",
-      "mission": "Set Table",
-      "ticket": {
-        "n": 2,
-        "title": "design"
-      }
     }
   ]
 }
