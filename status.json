@@ -1,13 +1,13 @@
 {
   "version": 1,
-  "updatedAt": "2026-11-14T09:10:33.586Z",
+  "updatedAt": "2026-11-14T09:10:35.668Z",
   "missions": [
     {
       "codename": "Set Table",
       "state": "active",
       "startedAt": "2026-11-09T14:01:20.784Z",
       "tickets": {
-        "done": 8,
+        "done": 9,
         "total": 9
       }
     }
@@ -97,6 +97,12 @@
     }
   },
   "events": [
+    {
+      "at": "2026-11-14T09:10:35.668Z",
+      "who": "chrollo",
+      "kind": "mission-progress",
+      "mission": "Set Table"
+    },
     {
       "at": "2026-11-14T09:10:33.586Z",
       "who": "nobunaga",
@@ -253,17 +259,6 @@
       "kind": "done",
       "verb": "building",
       "mission": "Set Table"
-    },
-    {
-      "at": "2026-11-13T19:53:45.604Z",
-      "who": "kortopi",
-      "kind": "start",
-      "verb": "building",
-      "mission": "Set Table",
-      "ticket": {
-        "n": 6,
-        "title": "pages"
-      }
     }
   ]
 }
