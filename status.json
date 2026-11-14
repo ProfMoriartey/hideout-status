@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updatedAt": "2026-11-14T07:42:04.882Z",
+  "updatedAt": "2026-11-14T07:42:07.970Z",
   "missions": [
     {
       "codename": "Set Table",
@@ -51,11 +51,19 @@
       "since": "2026-11-08T10:36:35.075Z"
     },
     "feitan": {
-      "state": "done",
-      "since": "2026-11-09T14:42:40.353Z",
-      "updatedAt": "2026-11-09T14:42:40.353Z",
-      "verb": "testing",
-      "mission": "Set Table"
+      "state": "working",
+      "since": "2026-11-14T07:42:07.970Z",
+      "updatedAt": "2026-11-14T07:42:07.970Z",
+      "verb": "reviewing",
+      "mission": "Set Table",
+      "progress": {
+        "done": 8,
+        "total": 9
+      },
+      "ticket": {
+        "n": 8,
+        "title": "tests"
+      }
     },
     "machi": {
       "state": "done",
@@ -86,6 +94,17 @@
     }
   },
   "events": [
+    {
+      "at": "2026-11-14T07:42:07.970Z",
+      "who": "feitan",
+      "kind": "start",
+      "verb": "reviewing",
+      "mission": "Set Table",
+      "ticket": {
+        "n": 8,
+        "title": "tests"
+      }
+    },
     {
       "at": "2026-11-14T07:42:04.882Z",
       "who": "kortopi",
@@ -240,12 +259,6 @@
         "n": 2,
         "title": "design"
       }
-    },
-    {
-      "at": "2026-11-13T19:18:14.163Z",
-      "who": "chrollo",
-      "kind": "mission-progress",
-      "mission": "Set Table"
     }
   ]
 }
