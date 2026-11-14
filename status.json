@@ -1,11 +1,12 @@
 {
   "version": 1,
-  "updatedAt": "2026-11-14T09:10:35.668Z",
+  "updatedAt": "2026-11-14T09:10:37.645Z",
   "missions": [
     {
       "codename": "Set Table",
-      "state": "active",
+      "state": "done",
       "startedAt": "2026-11-09T14:01:20.784Z",
+      "endedAt": "2026-11-14T09:10:37.645Z",
       "tickets": {
         "done": 9,
         "total": 9
@@ -97,6 +98,12 @@
     }
   },
   "events": [
+    {
+      "at": "2026-11-14T09:10:37.645Z",
+      "who": "chrollo",
+      "kind": "mission-done",
+      "mission": "Set Table"
+    },
     {
       "at": "2026-11-14T09:10:35.668Z",
       "who": "chrollo",
@@ -251,13 +258,6 @@
       "at": "2026-11-13T20:00:09.436Z",
       "who": "chrollo",
       "kind": "mission-progress",
-      "mission": "Set Table"
-    },
-    {
-      "at": "2026-11-13T20:00:07.182Z",
-      "who": "kortopi",
-      "kind": "done",
-      "verb": "building",
       "mission": "Set Table"
     }
   ]
