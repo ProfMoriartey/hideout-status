@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updatedAt": "2026-11-14T09:10:31.407Z",
+  "updatedAt": "2026-11-14T09:10:33.586Z",
   "missions": [
     {
       "codename": "Set Table",
@@ -69,18 +69,14 @@
       }
     },
     "nobunaga": {
-      "state": "working",
-      "since": "2026-11-14T07:42:16.455Z",
-      "updatedAt": "2026-11-14T07:42:16.455Z",
+      "state": "done",
+      "since": "2026-11-14T09:10:33.586Z",
+      "updatedAt": "2026-11-14T09:10:33.586Z",
       "verb": "guarding",
       "mission": "Set Table",
       "progress": {
         "done": 8,
         "total": 9
-      },
-      "ticket": {
-        "n": 8,
-        "title": "security"
       }
     },
     "franklin": {
@@ -101,6 +97,13 @@
     }
   },
   "events": [
+    {
+      "at": "2026-11-14T09:10:33.586Z",
+      "who": "nobunaga",
+      "kind": "done",
+      "verb": "guarding",
+      "mission": "Set Table"
+    },
     {
       "at": "2026-11-14T09:10:31.407Z",
       "who": "machi",
@@ -261,12 +264,6 @@
         "n": 6,
         "title": "pages"
       }
-    },
-    {
-      "at": "2026-11-13T19:53:43.584Z",
-      "who": "chrollo",
-      "kind": "mission-progress",
-      "mission": "Set Table"
     }
   ]
 }
